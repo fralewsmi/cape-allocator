@@ -25,7 +25,7 @@ dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "ruff>=0.4",
-    "mypy>=1.10",
+    "ty>=0.0.1",
     "hypothesis>=6.100",
 ]
 
@@ -42,10 +42,16 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "N", "B", "A"]
 
-[tool.mypy]
-python_version = "3.11"
-strict = true
-ignore_missing_imports = true
+[tool.ty.environment]
+python-version = "3.11"
+
+[tool.ty.rules]
+# Treat all diagnostics as errors for strict checking
+all = "error"
+
+[tool.ty.analysis]
+# Allow unresolved imports for missing or untyped dependencies
+allowed-unresolved-imports = ["*.**"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

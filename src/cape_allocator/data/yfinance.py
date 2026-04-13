@@ -162,7 +162,7 @@ def _real_eps_series(
                     current_cpi = float(cpi_index.iloc[-1])
                     real_eps_vals: list[float] = []
                     for dt, raw_eps in eps_series.items():
-                        year = pd.Timestamp(dt).year
+                        year = int(pd.Timestamp(dt).year)
                         year_cpi = _cpi_for_year(cpi_index, year)
                         if year_cpi and year_cpi > 0:
                             real_eps_vals.append(
@@ -185,7 +185,7 @@ def _real_eps_series(
 def _cpi_for_year(cpi_index: pd.Series, year: int) -> float | None:
     """Return the mean CPI for a given calendar year, or None if unavailable."""
     try:
-        annual = cpi_index[cpi_index.index.year == year]  # type: ignore[attr-defined]
+        annual = cpi_index[cpi_index.index.year == year]  # ty: ignore[unresolved-attribute]
         if annual.empty:
             return None
         return float(annual.mean())
