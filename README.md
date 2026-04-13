@@ -40,6 +40,35 @@ cape-allocator --gamma 2.0 --sigma 0.18 --cape-variant component_10y
 cape-allocator --cape 56.0 --tips 0.022  # manual override, no API needed
 ```
 
+## Development
+
+### Type Checking
+
+This project uses [ty](https://docs.astral.sh/ty/) for type checking.
+
+```bash
+# Run type checks
+ty check
+
+# Run with specific configuration
+ty check --config pyproject.toml
+```
+
+### Linting
+
+This project uses [Ruff](https://docs.astral.sh/ruff/) for code linting and formatting.
+
+```bash
+# Check for linting issues
+ruff check .
+
+# Fix auto-fixable issues
+ruff check . --fix
+
+# Format code
+ruff format .
+```
+
 ## References
 
 This project cites the following sources for the CAPE and Merton Rule ideas used in the allocator.
