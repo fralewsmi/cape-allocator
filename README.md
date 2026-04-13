@@ -2,9 +2,9 @@
 
 I became interested in optimal equity allocation after reading Shiller's Irrational Exuberance and tracking his CAPE ratio during the high equity valuations in 2025 during the AI bubble and Trump's tariffs.
 
-(This FTAV article)<https://www.ft.com/content/84b8a579-8634-47de-a421-a1eb39c8577d> pointed me to Ma, Marshall, Nguyen & Visaltanachoti (2026), who proposed the component CAPE as a new model that provides a higher level of accuracy for returns prediction.
+[This FT article](https://www.ft.com/content/84b8a579-8634-47de-a421-a1eb39c8577d) pointed me to Ma, Marshall, Nguyen & Visaltanachoti (2026), who proposed the component CAPE as a new model that provides higher accuracy for returns prediction.
 
-I thought it would be fun to test this out using the Merton Rule framework proposed by Haghani & White (2022), Using the excess yield over the TIPS rate to establish the equity risk premium.
+I thought it would be fun to test this out using the Merton Rule framework proposed by Haghani & White (2022), using the excess yield over the TIPS rate to establish the equity risk premium.
 
 **Merton Rule:**
 
