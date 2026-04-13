@@ -1,0 +1,28 @@
+# Virtual environments
+.venv/
+
+# Python
+__pycache__/
+
+# Distribution
+build/
+dist/
+*.egg-info/
+
+# Testing
+.coverage
+.pytest_cache/
+.hypothesis/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Environment
+.env
+
+# Logs
+*.log
