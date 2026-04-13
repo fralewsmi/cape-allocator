@@ -69,6 +69,31 @@ ruff check . --fix
 ruff format .
 ```
 
+### Testing
+
+Run the test suite using pytest:
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage report
+pytest --cov=cape_allocator --cov-report=html
+```
+
+### Continuous Integration
+
+This project uses GitHub Actions for automated testing, linting, and type checking. Workflows are defined in `.github/workflows/ci.yml` and run on:
+
+- Push to `main` branch
+- Pull requests to `main` branch
+
+The CI pipeline checks:
+
+- **Lint**: Code style and quality with Ruff
+- **Type Check**: Type safety with ty
+- **Test**: Unit tests with pytest and coverage reporting
+
 ## References
 
 This project cites the following sources for the CAPE and Merton Rule ideas used in the allocator.
