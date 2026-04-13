@@ -23,8 +23,7 @@ from cape_allocator.calculations.cape import (
     compute_earnings_yield,
     forecast_10y_return,
 )
-from cape_allocator.models.inputs import CapeVariant, HISTORICAL_MEAN_CAPE
-
+from cape_allocator.models.inputs import HISTORICAL_MEAN_CAPE, CapeVariant
 
 # ── Deterministic tests ───────────────────────────────────────────────────────
 

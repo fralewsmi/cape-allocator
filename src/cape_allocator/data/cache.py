@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -49,7 +49,7 @@ def cache_get(key: str) -> Any | None:
     try:
         payload = json.loads(path.read_text())
         fetched_at = datetime.fromisoformat(payload["fetched_at"])
-        if datetime.now(tz=timezone.utc) - fetched_at > timedelta(hours=_ttl_hours()):
+        if datetime.now(tz=UTC) - fetched_at > timedelta(hours=_ttl_hours()):
             return None
         return payload["data"]
     except (KeyError, ValueError, json.JSONDecodeError):
@@ -68,7 +68,7 @@ def cache_set(key: str, data: Any) -> None:
         JSON-serialisable value.
     """
     payload = {
-        "fetched_at": datetime.now(tz=timezone.utc).isoformat(),
+        "fetched_at": datetime.now(tz=UTC).isoformat(),
         "data": data,
     }
     _cache_path(key).write_text(json.dumps(payload, indent=2))

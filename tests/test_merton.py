@@ -24,7 +24,6 @@ from cape_allocator.calculations.merton import (
     compute_merton_share,
 )
 
-
 # ── Deterministic tests ───────────────────────────────────────────────────────
 
 class TestComputeExcessEarningsYield:
@@ -35,7 +34,7 @@ class TestComputeExcessEarningsYield:
         assert compute_excess_earnings_yield(0.04, 0.04) == pytest.approx(0.0)
 
     def test_negative_excess_when_tips_higher(self) -> None:
-        """High TIPS yield relative to earnings yield → negative EEY (avoid equities)."""
+        """TIPS higher than EY yields negative EEY (avoid equities)."""
         eey = compute_excess_earnings_yield(0.02, 0.03)
         assert eey == pytest.approx(-0.01)
 

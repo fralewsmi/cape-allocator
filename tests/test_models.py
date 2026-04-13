@@ -11,7 +11,7 @@ import pytest
 from pydantic import ValidationError
 
 from cape_allocator.models.inputs import CapeVariant, InvestorParams, MarketInputs
-from cape_allocator.models.outputs import AllocationResult, DataWarning, WarningSeverity
+from cape_allocator.models.outputs import DataWarning, WarningSeverity
 
 
 class TestInvestorParams:

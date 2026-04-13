@@ -57,7 +57,7 @@ def fetch_cpi_index() -> pd.Series:
 
     api_key = os.environ.get("FRED_API_KEY", "")
     if not api_key or api_key == "your_fred_api_key_here":
-        raise EnvironmentError(
+        raise OSError(
             "FRED_API_KEY is not set.  Add it to your .env file.\n"
             "Free registration: https://fred.stlouisfed.org/docs/api/api_key.html"
         )

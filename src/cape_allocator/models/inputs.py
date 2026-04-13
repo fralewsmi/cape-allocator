@@ -8,12 +8,12 @@ drawn from the academic literature.
 from __future__ import annotations
 
 from datetime import date
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field, model_validator
 
 
-class CapeVariant(str, Enum):
+class CapeVariant(StrEnum):
     """
     CAPE earnings-averaging methodologies evaluated in Ma et al. (2026).
 
@@ -103,7 +103,7 @@ class InvestorParams(BaseModel):
     )
 
     @model_validator(mode="after")
-    def bounds_are_consistent(self) -> "InvestorParams":
+    def bounds_are_consistent(self) -> InvestorParams:
         if self.min_equity >= self.max_equity:
             raise ValueError(
                 f"min_equity ({self.min_equity}) must be strictly less than "

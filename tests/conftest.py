@@ -20,7 +20,6 @@ import pytest
 
 from cape_allocator.models.inputs import CapeVariant, InvestorParams, MarketInputs
 
-
 # ── Haghani & White (2022) calibration fixture ───────────────────────────────
 # "Using the Merton Rule with γ=2 we get: k* = 62.5% = 5% / (2 * 20%²)"
 # Source: Haghani & White (2022), footnote 10.

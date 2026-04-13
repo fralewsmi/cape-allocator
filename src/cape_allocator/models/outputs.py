@@ -8,14 +8,14 @@ without raising exceptions, so callers can inspect and decide.
 from __future__ import annotations
 
 from datetime import date
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field, computed_field
 
-from cape_allocator.models.inputs import CapeVariant, HISTORICAL_MEAN_CAPE
+from cape_allocator.models.inputs import HISTORICAL_MEAN_CAPE, CapeVariant
 
 
-class WarningSeverity(str, Enum):
+class WarningSeverity(StrEnum):
     INFO = "INFO"       # Contextual note, no action required
     WARN = "WARN"       # Data quality issue; result still produced
     ERROR = "ERROR"     # Significant data problem; result may be unreliable
@@ -63,13 +63,19 @@ class AllocationResult(BaseModel):
         description="1 / CAPE — real equity return estimate (Campbell & Shiller, 1988)."
     )
     excess_earnings_yield: float = Field(
-        description="EY minus TIPS real yield — equity risk premium over TIPS (Haghani & White, 2022)."
+        description=(
+            "EY minus TIPS real yield — equity risk premium over TIPS "
+            "(Haghani & White, 2022)."
+        )
     )
     merton_share_unconstrained: float = Field(
         description="f* = μ / (γ·σ²) before applying allocation bounds (Merton, 1971)."
     )
     equity_allocation: float = Field(
-        description="Constrained optimal equity allocation, clamped to [min_equity, max_equity]."
+        description=(
+            "Constrained optimal equity allocation, "
+            "clamped to [min_equity, max_equity]."
+        )
     )
     tips_allocation: float = Field(
         description="1 − equity_allocation (residual allocated to TIPS)."

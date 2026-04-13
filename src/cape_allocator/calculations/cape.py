@@ -29,8 +29,8 @@ from __future__ import annotations
 import numpy as np
 
 from cape_allocator.models.inputs import (
-    CapeVariant,
     HISTORICAL_MEAN_CAPE,
+    CapeVariant,
 )
 
 # ── Constant-slope coefficient ─────────────────────────────────────────────

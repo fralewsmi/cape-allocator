@@ -15,8 +15,6 @@ from hypothesis import strategies as st
 
 from cape_allocator.calculations.allocator import compute_allocation
 from cape_allocator.models.inputs import CapeVariant, InvestorParams, MarketInputs
-from cape_allocator.models.outputs import WarningSeverity
-
 
 # ── Deterministic end-to-end tests ───────────────────────────────────────────
 

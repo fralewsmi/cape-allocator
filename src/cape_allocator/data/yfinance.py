@@ -53,7 +53,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
-import requests
 import yfinance as yf
 
 from cape_allocator.data.cache import cache_get, cache_set
@@ -272,7 +271,9 @@ def fetch_component_cape(window_years: int = 10) -> ComponentCapeResult:
         Contains the aggregate CAPE, coverage fraction, and per-constituent
         detail.
     """
-    cache_key = _CACHE_KEY_COMPONENT_CAPE.format(variant="component", window=window_years)
+    cache_key = _CACHE_KEY_COMPONENT_CAPE.format(
+        variant="component", window=window_years
+    )
     cached = cache_get(cache_key)
     if cached is not None:
         # Reconstruct lightweight result from cache (no constituent detail)

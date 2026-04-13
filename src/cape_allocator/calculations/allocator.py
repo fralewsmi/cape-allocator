@@ -10,21 +10,22 @@ from __future__ import annotations
 
 from datetime import date
 
+from cape_allocator.models.inputs import CapeVariant, InvestorParams, MarketInputs
+from cape_allocator.models.outputs import (
+    AllocationResult,
+    DataWarning,
+    WarningSeverity,
+)
+
 from .cape import (
-    compute_earnings_yield,
     cape_percentile_vs_history,
+    compute_earnings_yield,
 )
 from .merton import (
     apply_allocation_bounds,
     compute_cer,
     compute_excess_earnings_yield,
     compute_merton_share,
-)
-from cape_allocator.models.inputs import CapeVariant, InvestorParams, MarketInputs
-from cape_allocator.models.outputs import (
-    AllocationResult,
-    DataWarning,
-    WarningSeverity,
 )
 
 _LOW_COVERAGE_THRESHOLD = 0.80
@@ -101,12 +102,16 @@ def compute_allocation(
                     f"below the {_LOW_COVERAGE_THRESHOLD:.0%} threshold."
                 ),
             ))
-        if market.cape_variant == CapeVariant.AGGREGATE_10Y and market.constituent_coverage is not None:
+        if (
+            market.cape_variant == CapeVariant.AGGREGATE_10Y
+            and market.constituent_coverage is not None
+        ):
             warnings.append(DataWarning(
                 severity=WarningSeverity.INFO,
                 code=_FALLBACK_CODE,
                 message=(
-                    "Fell back to Shiller aggregate CAPE due to low constituent coverage. "
+                    "Fell back to Shiller aggregate CAPE due to "
+                    "low constituent coverage. "
                     "Aggregate CAPE OOS R² = 46.7% vs 57.5% for Component CAPE "
                     "(Ma et al. 2026, Table 3)."
                 ),
@@ -117,7 +122,9 @@ def compute_allocation(
     merton_raw = compute_merton_share(eey, investor.gamma, investor.sigma)
 
     # ── Step 6: Apply investor bounds ─────────────────────────────────────
-    f_star = apply_allocation_bounds(merton_raw, investor.min_equity, investor.max_equity)
+    f_star = apply_allocation_bounds(
+        merton_raw, investor.min_equity, investor.max_equity
+    )
 
     if f_star != merton_raw:
         bound = "minimum" if merton_raw < investor.min_equity else "maximum"

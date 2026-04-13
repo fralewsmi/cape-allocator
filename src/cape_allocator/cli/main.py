@@ -36,7 +36,7 @@ from cape_allocator.calculations.allocator import (
     fetch_market_inputs_and_allocate,
 )
 from cape_allocator.models.inputs import CapeVariant, InvestorParams, MarketInputs
-from cape_allocator.models.outputs import AllocationResult, WarningSeverity
+from cape_allocator.models.outputs import AllocationResult
 
 console = Console()
 
@@ -53,7 +53,8 @@ _SIGMA_HELP = (
 )
 _VARIANT_HELP = (
     "CAPE variant.  component_10y is the Ma et al. (2026) baseline "
-    "(OOS R²=57.5 percent).  aggregate_10y is traditional Shiller (OOS R²=46.7 percent)."
+    "(OOS R²=57.5 percent).  aggregate_10y is traditional Shiller "
+    "(OOS R²=46.7 percent)."
 )
 
 
@@ -70,20 +71,36 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--gamma", type=float, default=None, help=_GAMMA_HELP)
     parser.add_argument("--sigma", type=float, default=None, help=_SIGMA_HELP)
-    parser.add_argument("--min-equity", type=float, default=None,
-                        help="Minimum equity allocation (floor), decimal.  Default 0.0.")
-    parser.add_argument("--max-equity", type=float, default=None,
-                        help="Maximum equity allocation (cap), decimal.  Default 1.0.")
+    parser.add_argument(
+        "--min-equity",
+        type=float,
+        default=None,
+        help="Minimum equity allocation (floor), decimal.  Default 0.0.",
+    )
+    parser.add_argument(
+        "--max-equity",
+        type=float,
+        default=None,
+        help="Maximum equity allocation (cap), decimal.  Default 1.0.",
+    )
     parser.add_argument(
         "--cape-variant",
         choices=_VARIANT_CHOICES,
         default=None,
         help=_VARIANT_HELP,
     )
-    parser.add_argument("--cape", type=float, default=None,
-                        help="Override: supply CAPE value directly (skips yfinance fetch).")
-    parser.add_argument("--tips", type=float, default=None,
-                        help="Override: supply TIPS yield directly as decimal (skips FRED fetch).")
+    parser.add_argument(
+        "--cape",
+        type=float,
+        default=None,
+        help="Override: supply CAPE value directly (skips yfinance fetch).",
+    )
+    parser.add_argument(
+        "--tips",
+        type=float,
+        default=None,
+        help="Override: supply TIPS yield directly as decimal (skips FRED fetch).",
+    )
     parser.add_argument("--clear-cache", action="store_true",
                         help="Clear all cached market data before running.")
     return parser
@@ -94,7 +111,7 @@ def _prompt_if_none(value: float | None, label: str, default: float,
     if value is not None:
         return value
     console.print(f"  [dim]{label}[/dim]")
-    raw = FloatPrompt.ask(f"  Enter value", default=default, console=console)
+    raw = FloatPrompt.ask("  Enter value", default=default, console=console)
     if not (min_val <= raw <= max_val):
         console.print(
             f"  [red]Value {raw} out of range [{min_val}, {max_val}]. "
@@ -186,7 +203,9 @@ def _render_result(result: AllocationResult) -> None:
         f"[{eey_colour}]{result.excess_earnings_yield:+.3%}[/{eey_colour}]",
         "EY − TIPS yield  (Haghani & White, 2022)",
     )
-    constrained_note = " [dim](constrained)[/dim]" if result.allocation_is_constrained else ""
+    constrained_note = (
+        " [dim](constrained)[/dim]" if result.allocation_is_constrained else ""
+    )
     table.add_row(
         "  Merton share (unconstrained)",
         f"{result.merton_share_unconstrained:.1%}",
@@ -200,7 +219,10 @@ def _render_result(result: AllocationResult) -> None:
     eq_colour = "green" if result.equity_allocation >= 0.4 else "yellow"
     table.add_row(
         "  Equities",
-        f"[bold {eq_colour}]{result.equity_allocation:.1%}[/bold {eq_colour}]{constrained_note}",
+        (
+            f"[bold {eq_colour}]{result.equity_allocation:.1%}"
+            f"[/bold {eq_colour}]{constrained_note}"
+        ),
         "S&P 500",
     )
     table.add_row(
@@ -270,8 +292,11 @@ def main() -> None:
     console.print()
 
     gamma = _prompt_if_none(
-        args.gamma, "Risk aversion γ  (Haghani & White default: 2.0; Ma et al. use 5.0)",
-        default=2.0, min_val=0.5, max_val=20.0,
+        args.gamma,
+        "Risk aversion γ  (Haghani & White default: 2.0; Ma et al. use 5.0)",
+        default=2.0,
+        min_val=0.5,
+        max_val=20.0,
     )
     sigma = _prompt_if_none(
         args.sigma, "Equity volatility σ  (Haghani & White default: 0.18)",
@@ -327,7 +352,7 @@ def main() -> None:
             console.print("  Fetching constituent CAPE from yfinance…")
             console.print("  Fetching TIPS yield from FRED…")
             result = fetch_market_inputs_and_allocate(investor)
-        except EnvironmentError as exc:
+        except OSError as exc:
             console.print(f"\n[red]Configuration error: {exc}[/red]")
             sys.exit(1)
         except RuntimeError as exc:
