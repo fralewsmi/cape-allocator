@@ -2,9 +2,17 @@
 
 I became interested in optimal equity allocation after reading Shiller's Irrational Exuberance and tracking his CAPE ratio during the high equity valuations in 2025 during the AI bubble and Trump's tariffs.
 
-[This FT article](https://www.ft.com/content/84b8a579-8634-47de-a421-a1eb39c8577d) pointed me to Ma, Marshall, Nguyen & Visaltanachoti (2026), who proposed the component CAPE as a new model that provides higher accuracy for returns prediction.
+[This FTAV article](https://www.ft.com/content/84b8a579-8634-47de-a421-a1eb39c8577d) by Toby Nangle pointed me to Ma, Marshall, Nguyen & Visaltanachoti (2026), who proposed the component CAPE as a new model that provides higher accuracy for returns prediction.
 
-I thought it would be fun to test this out using the Merton Rule framework proposed by Haghani & White (2022), using the excess yield over the TIPS rate to establish the equity risk premium.
+CAPE-implied equity allocation by risk aversion
+
+Each curve shows the Merton Rule optimal equity allocation
+
+$$f^* = \frac{\mu}{\gamma \cdot \sigma^2}$$
+
+across the CAPE range for a given risk aversion level γ, evaluated at long-run historical averages (TIPS 1.70%, σ 18%). The dashed line marks the Component CAPE historical mean of 29.74× (Ma et al., 2026).
+
+I thought it would be fun to test this out using the Merton Rule framework proposed by [Haghani & White (2022)](https://elmwealth.com/earnings-yield-dynamic-allocation/)., using the excess yield over the TIPS rate to establish the equity risk premium.
 
 **Merton Rule:**
 
@@ -15,6 +23,43 @@ where:
 - $\mu$ = Excess Earnings Yield = $\frac{1}{\text{CAPE}} - \text{TIPS yield}$
 - $\gamma$ = risk aversion
 - $\sigma$ = equity volatility
+
+## Model Visualisation
+
+![CAPE implied equity allocation by risk aversion](./CAPE-implied_equity_allocation_by_risk_aversion.png)
+
+_Chart created via Claude to visualise the model, not a live part of the allocator output._
+
+## Usage
+
+```bash
+cape-allocator # interactive
+cape-allocator --gamma 2.0 --sigma 0.18 --cape-variant component_10y
+cape-allocator --cape 56.0 --tips 0.022  # m2qanual override, no API needed
+```
+
+- `--gamma` is the most consequential choice. `γ = 2` (Haghani & White default) is aggressive; `γ = 5` (Ma et al. calibration) allocates ~30% at the historical mean CAPE.
+- `--cape` and `--tips` together set where on the x-axis the program is operating
+- `--sigma` can generally be left at the default 18%, which is the long-run historical average
+
+```bash
+cap-allocator --help
+```
+
+For more options.  yu 
+
+### Choosing γ (risk aversion)
+
+A useful starting point is to ask: _how would a permanent 50% loss of wealth affect my life?_ If survivable but painful, you are likely `γ = 2`. If it would materially alter your lifestyle, `γ = 5`. If catastrophic, `γ = 10`.
+
+| γ   | Profile                                                                   |
+| --- | ------------------------------------------------------------------------- |
+| 1   | Young investor, long horizon, stable income; near-maximally aggressive    |
+| 2   | Haghani & White (2022) default; moderate risk tolerance                   |
+| 5   | Ma et al. (2026) calibration; pre-retiree or institutionally conservative |
+| 10  | Retiree; portfolio is primary income source                               |
+
+Note that `γ` should reflect _financial_ risk aversion rather than emotional comfort. A large pension or guaranteed income effectively lowers your financial `γ` even if markets make you nervous. See [Haghani & White (2018)](https://elmwealth.com/measuring-the-fabric-of-felicity/)
 
 ## Installation
 
@@ -30,14 +75,6 @@ uv pip install -e ".[dev]"
 
 # Copy environment file
 cp .env.example .env   # add your FRED API key
-```
-
-## Usage
-
-```bash
-cape-allocator         # interactive
-cape-allocator --gamma 2.0 --sigma 0.18 --cape-variant component_10y
-cape-allocator --cape 56.0 --tips 0.022  # manual override, no API needed
 ```
 
 ## Development
@@ -96,13 +133,14 @@ The CI pipeline checks:
 
 ## References
 
-This project cites the following sources for the CAPE and Merton Rule ideas used in the allocator.
+- Haghani, V., & White, J. (2018) "Measuring the Fabric of Felicity." Elm Wealth.
+  - <https://elmwealth.com/measuring-the-fabric-of-felicity/>
 
 - Haghani, V., & White, J. (2022). "Man Doth Not Invest by Earnings Yield Alone: A Fresh Look at Earnings Yield and Dynamic Asset Allocation." Elm Wealth.
-  - https://elmwealth.com/earnings-yield-dynamic-allocation/
+  - <https://elmwealth.com/earnings-yield-dynamic-allocation/>
 
 - Li, K., Li, Y., Lyu, C., & Yu, J. (2025). "How to Dominate the Historical Average." _Review of Financial Studies_.
-  - https://academic.oup.com/rfs/article/38/10/3086/8010588
+  - <https://academic.oup.com/rfs/article/38/10/3086/8010588>
 
 - Ma, Q., Marshall, A., Nguyen, T. H., & Visaltanachoti, N. (2026). Component CAPE research.
-  - https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6060895
+  - <https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6060895>
