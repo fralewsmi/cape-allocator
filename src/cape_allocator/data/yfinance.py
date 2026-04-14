@@ -48,11 +48,13 @@ Ma, R., Marshall, B. R., Nguyen, N. H., & Visaltanachoti, N. (2026).
 
 from __future__ import annotations
 
+import io
 import warnings
 from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
+import requests
 import yfinance as yf
 
 from cape_allocator.data.cache import cache_get, cache_set
@@ -104,12 +106,20 @@ def fetch_sp500_tickers() -> list[str]:
         return cached
 
     try:
-        tables = pd.read_html(_SP500_WIKI_URL, attrs={"id": "constituents"})
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (compatible; cape-allocator/0.1; "
+                "+https://github.com/cape-allocator)"
+            )
+        }
+        response = requests.get(_SP500_WIKI_URL, headers=headers, timeout=15)
+        response.raise_for_status()
+        tables = pd.read_html(io.StringIO(response.text), attrs={"id": "constituents"})
         df = tables[0]
         tickers: list[str] = (
             df["Symbol"].str.replace(".", "-", regex=False).tolist()
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise RuntimeError(
             f"Could not fetch S&P 500 constituent list from Wikipedia: {exc}"
         ) from exc
