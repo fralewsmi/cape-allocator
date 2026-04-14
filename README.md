@@ -73,6 +73,17 @@ uv pip install -e ".[dev]"
 cp .env.example .env   # add your FRED API key
 ```
 
+## Data sources
+
+Responses are cached under `CAPE_CACHE_DIR` (default `~/.cache/cape_allocator`).
+
+- **FRED** ([API key](https://fred.stlouisfed.org/docs/api/api_key.html) in `.env`): TIPS `DFII10` / `WFII10`, CPI `CPIAUCSL`.
+- **[Wikipedia](https://en.wikipedia.org/wiki/List_of_S%26P_500_companies)**: S&P 500 tickers.
+- **[Yahoo Finance](https://finance.yahoo.com/)** via [yfinance](https://github.com/ranaroussi/yfinance): prices, market cap, EPS (unofficial).
+- **[Shiller CAPE spreadsheet](http://www.econ.yale.edu/~shiller/data/ie_data.xls)** (Yale): aggregate CAPE and low-coverage fallback.
+
+`--cape` and `--tips` together skip live CAPE/TIPS fetches. CLI fetch logs: `-v` / `-q` (see `--help`).
+
 ## Development
 
 ### Type Checking
