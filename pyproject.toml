@@ -13,7 +13,6 @@ dependencies = [
     "pandas>=2.2",
     "numpy>=1.26",
     "requests>=2.31",
-    "fredapi>=0.5",
     "python-dotenv>=1.0",
     "rich>=13.0",
     "yfinance>=0.2",

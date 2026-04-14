@@ -183,6 +183,7 @@ def compute_cer(
     float
         Certainty equivalent return (decimal).
     """
-    return equity_allocation * excess_earnings_yield - (gamma / 2.0) * (
-        equity_allocation * sigma
-    ) ** 2
+    return (
+        equity_allocation * excess_earnings_yield
+        - (gamma / 2.0) * (equity_allocation * sigma) ** 2
+    )

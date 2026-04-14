@@ -16,17 +16,17 @@ from cape_allocator.models.inputs import HISTORICAL_MEAN_CAPE, CapeVariant
 
 
 class WarningSeverity(StrEnum):
-    INFO = "INFO"       # Contextual note, no action required
-    WARN = "WARN"       # Data quality issue; result still produced
-    ERROR = "ERROR"     # Significant data problem; result may be unreliable
+    INFO = "INFO"  # Contextual note, no action required
+    WARN = "WARN"  # Data quality issue; result still produced
+    ERROR = "ERROR"  # Significant data problem; result may be unreliable
 
 
 class DataWarning(BaseModel):
     """A single warning attached to an AllocationResult."""
 
     severity: WarningSeverity
-    code: str           # Short machine-readable identifier, e.g. "LOW_COVERAGE"
-    message: str        # Human-readable description
+    code: str  # Short machine-readable identifier, e.g. "LOW_COVERAGE"
+    message: str  # Human-readable description
 
 
 class AllocationResult(BaseModel):

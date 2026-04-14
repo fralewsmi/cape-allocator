@@ -24,26 +24,26 @@ class CapeVariant(StrEnum):
     predictive accuracy and is the paper's primary result.
     """
 
-    COMPONENT_10Y = "component_10y"    # Ma et al. baseline — OOS R² = 57.52%
-    COMPONENT_5Y = "component_5y"      # Ma et al. — OOS R² = 55.05%
+    COMPONENT_10Y = "component_10y"  # Ma et al. baseline — OOS R² = 57.52%
+    COMPONENT_5Y = "component_5y"  # Ma et al. — OOS R² = 55.05%
     COMPONENT_EWMA = "component_ewma"  # Ma et al. — OOS R² = 56.80%
-    AGGREGATE_10Y = "aggregate_10y"    # Traditional Shiller — OOS R² = 46.67%
+    AGGREGATE_10Y = "aggregate_10y"  # Traditional Shiller — OOS R² = 46.67%
 
 
 # ── Historical mean CAPEs from Ma et al. (2026), Table 1 (1964–2024) ─────────
 HISTORICAL_MEAN_CAPE: dict[CapeVariant, float] = {
-    CapeVariant.COMPONENT_10Y:  29.74,
-    CapeVariant.COMPONENT_5Y:   24.48,
+    CapeVariant.COMPONENT_10Y: 29.74,
+    CapeVariant.COMPONENT_5Y: 24.48,
     CapeVariant.COMPONENT_EWMA: 29.04,
-    CapeVariant.AGGREGATE_10Y:  21.65,
+    CapeVariant.AGGREGATE_10Y: 21.65,
 }
 
 # Earnings window in years for each variant
 EARNINGS_WINDOW_YEARS: dict[CapeVariant, int] = {
-    CapeVariant.COMPONENT_10Y:  10,
-    CapeVariant.COMPONENT_5Y:   5,
+    CapeVariant.COMPONENT_10Y: 10,
+    CapeVariant.COMPONENT_5Y: 5,
     CapeVariant.COMPONENT_EWMA: 10,
-    CapeVariant.AGGREGATE_10Y:  10,
+    CapeVariant.AGGREGATE_10Y: 10,
 }
 
 

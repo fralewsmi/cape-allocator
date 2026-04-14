@@ -42,11 +42,7 @@ cape-allocator --cape 56.0 --tips 0.022  # m2qanual override, no API needed
 - `--cape` and `--tips` together set where on the x-axis the program is operating
 - `--sigma` can generally be left at the default 18%, which is the long-run historical average
 
-```bash
-cap-allocator --help
-```
-
-For more options.  yu 
+`cape-allocator --help` For more options
 
 ### Choosing γ (risk aversion)
 

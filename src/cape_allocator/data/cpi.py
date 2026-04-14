@@ -7,23 +7,26 @@ Series: CPIAUCSL — Consumer Price Index for All Urban Consumers: All Items
 This is the same CPI series used by Robert Shiller in his online dataset
 to adjust earnings and prices to a common price level.
 
+Uses the FRED REST API via ``fred._fetch_fred_series`` (same as TIPS data).
 Requires FRED_API_KEY in .env.
 """
 
 from __future__ import annotations
 
-import os
+import logging
 
 import pandas as pd
-from dotenv import load_dotenv
-from fredapi import Fred
 
 from cape_allocator.data.cache import cache_get, cache_set
+from cape_allocator.data.fred import _fetch_fred_series, _fred_api_key
 
-load_dotenv()
+logger = logging.getLogger(__name__)
 
 _CPI_SERIES = "CPIAUCSL"
 _CACHE_KEY = "fred_cpiaucsl"
+_CPI_FETCH_START = "1900-01-01"
+# Below FRED's per-request cap; CPIAUCSL has on the order of 1e3 monthly points.
+_CPI_OBS_LIMIT = 100_000
 
 
 def fetch_cpi_index() -> pd.Series:
@@ -49,26 +52,45 @@ def fetch_cpi_index() -> pd.Series:
     """
     cached = cache_get(_CACHE_KEY)
     if cached is not None:
-        return pd.Series(
+        s = pd.Series(
             cached["values"],
             index=pd.to_datetime(cached["index"]),
             name="CPIAUCSL",
         )
+        logger.info("FRED CPI: cache hit (CPIAUCSL, %s months)", len(s))
+        return s
 
-    api_key = os.environ.get("FRED_API_KEY", "")
-    if not api_key or api_key == "your_fred_api_key_here":
-        raise OSError(
-            "FRED_API_KEY is not set.  Add it to your .env file.\n"
-            "Free registration: https://fred.stlouisfed.org/docs/api/api_key.html"
-        )
-
-    fred = Fred(api_key=api_key)
+    logger.info("FRED CPI: downloading CPIAUCSL from FRED API…")
     try:
-        series: pd.Series = fred.get_series(_CPI_SERIES).dropna().sort_index()
+        observations = _fetch_fred_series(
+            _CPI_SERIES,
+            _fred_api_key(),
+            limit=_CPI_OBS_LIMIT,
+            sort_order="asc",
+            observation_start=_CPI_FETCH_START,
+        )
     except Exception as exc:  # noqa: BLE001
         raise RuntimeError(
             f"Could not fetch CPI series {_CPI_SERIES} from FRED: {exc}"
         ) from exc
+
+    dates: list[pd.Timestamp] = []
+    values: list[float] = []
+    for row in observations:
+        v = row.get("value")
+        if v is None or v == ".":
+            continue
+        dates.append(pd.to_datetime(row["date"]))
+        values.append(float(v))
+
+    if not values:
+        raise RuntimeError(
+            f"Could not fetch CPI series {_CPI_SERIES} from FRED: empty series"
+        )
+
+    series = pd.Series(values, index=pd.DatetimeIndex(dates), name="CPIAUCSL")
+    series = series.sort_index()
+    logger.info("FRED CPI: loaded %s monthly CPIAUCSL points", len(series))
 
     cache_set(
         _CACHE_KEY,

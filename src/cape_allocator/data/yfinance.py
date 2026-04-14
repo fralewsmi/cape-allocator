@@ -49,7 +49,9 @@ Ma, R., Marshall, B. R., Nguyen, N. H., & Visaltanachoti, N. (2026).
 from __future__ import annotations
 
 import io
+import logging
 import warnings
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -60,13 +62,15 @@ import yfinance as yf
 from cape_allocator.data.cache import cache_get, cache_set
 from cape_allocator.data.cpi import fetch_cpi_index
 
-_SP500_WIKI_URL = (
-    "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-)
+logger = logging.getLogger(__name__)
+
+_SP500_WIKI_URL = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 _CACHE_KEY_TICKERS = "sp500_tickers"
 _CACHE_KEY_COMPONENT_CAPE = "component_cape_{variant}_{window}y"
 _MIN_COVERAGE_THRESHOLD = 0.80
-_WINSORISE_CAPE_MAX = 200.0   # Per Ma et al. (2026): outliers are winsorised
+_WINSORISE_CAPE_MAX = 200.0  # Per Ma et al. (2026): outliers are winsorised
+# Parallel Yahoo requests; keep moderate to reduce rate-limit risk.
+_CONSTITUENT_FETCH_WORKERS = 12
 
 
 @dataclass
@@ -86,7 +90,7 @@ class ComponentCapeResult:
     """Aggregate result of a Component CAPE computation pass."""
 
     cape: float
-    coverage: float                          # Fraction of tickers successfully computed
+    coverage: float  # Fraction of tickers successfully computed
     constituent_results: list[ConstituentResult] = field(default_factory=list)
     tickers_attempted: int = 0
     tickers_succeeded: int = 0
@@ -103,8 +107,10 @@ def fetch_sp500_tickers() -> list[str]:
     """
     cached = cache_get(_CACHE_KEY_TICKERS)
     if cached is not None:
+        logger.info("Wikipedia: using cached S&P 500 list (%s tickers)", len(cached))
         return cached
 
+    logger.info("Wikipedia: downloading S&P 500 constituent table…")
     try:
         headers = {
             "User-Agent": (
@@ -116,15 +122,14 @@ def fetch_sp500_tickers() -> list[str]:
         response.raise_for_status()
         tables = pd.read_html(io.StringIO(response.text), attrs={"id": "constituents"})
         df = tables[0]
-        tickers: list[str] = (
-            df["Symbol"].str.replace(".", "-", regex=False).tolist()
-        )
+        tickers: list[str] = df["Symbol"].str.replace(".", "-", regex=False).tolist()
     except Exception as exc:
         raise RuntimeError(
             f"Could not fetch S&P 500 constituent list from Wikipedia: {exc}"
         ) from exc
 
     cache_set(_CACHE_KEY_TICKERS, tickers)
+    logger.info("Wikipedia: loaded %s tickers", len(tickers))
     return tickers
 
 
@@ -132,6 +137,8 @@ def _real_eps_series(
     ticker_obj: yf.Ticker,
     cpi_index: pd.Series,
     window_years: int,
+    *,
+    info: dict | None = None,
 ) -> tuple[list[float], int, bool]:
     """
     Build a list of real (CPI-adjusted) annual EPS values for one ticker.
@@ -148,7 +155,7 @@ def _real_eps_series(
     used_ttm_only : bool
         True if the income statement was unavailable and TTM EPS was used.
     """
-    info = ticker_obj.info or {}
+    info = info if info is not None else (ticker_obj.info or {})
     ttm_eps: float | None = info.get("trailingEps")
 
     # Attempt to read annual income statement
@@ -229,7 +236,7 @@ def _compute_constituent_cape(
             return None
 
         real_eps, years_available, used_ttm = _real_eps_series(
-            t, cpi_index, window_years
+            t, cpi_index, window_years, info=info
         )
 
         if not real_eps:
@@ -286,6 +293,13 @@ def fetch_component_cape(window_years: int = 10) -> ComponentCapeResult:
     )
     cached = cache_get(cache_key)
     if cached is not None:
+        logger.info(
+            "Yahoo Finance: using cached component CAPE (%s-year window, "
+            "%s/%s tickers last run)",
+            window_years,
+            cached["tickers_succeeded"],
+            cached["tickers_attempted"],
+        )
         # Reconstruct lightweight result from cache (no constituent detail)
         return ComponentCapeResult(
             cape=cached["cape"],
@@ -294,14 +308,42 @@ def fetch_component_cape(window_years: int = 10) -> ComponentCapeResult:
             tickers_succeeded=cached["tickers_succeeded"],
         )
 
-    cpi_index = fetch_cpi_index()
-    tickers = fetch_sp500_tickers()
+    logger.info(
+        "Yahoo Finance: building component CAPE — CPI + tickers (parallel), "
+        "then %s workers for quotes…",
+        _CONSTITUENT_FETCH_WORKERS,
+    )
+
+    with ThreadPoolExecutor(max_workers=2) as _io_pool:
+        cpi_future = _io_pool.submit(fetch_cpi_index)
+        tickers_future = _io_pool.submit(fetch_sp500_tickers)
+        cpi_index = cpi_future.result()
+        tickers = tickers_future.result()
+
+    logger.info(
+        "Yahoo Finance: fetching price, market cap, and EPS for %s tickers…",
+        len(tickers),
+    )
 
     results: list[ConstituentResult] = []
-    for ticker in tickers:
-        result = _compute_constituent_cape(ticker, cpi_index, window_years)
-        if result is not None:
-            results.append(result)
+    total = len(tickers)
+    done = 0
+    with ThreadPoolExecutor(max_workers=_CONSTITUENT_FETCH_WORKERS) as pool:
+        futures = [
+            pool.submit(_compute_constituent_cape, sym, cpi_index, window_years)
+            for sym in tickers
+        ]
+        for fut in as_completed(futures):
+            try:
+                result = fut.result()
+            except Exception:  # noqa: BLE001
+                pass
+            else:
+                if result is not None:
+                    results.append(result)
+            done += 1
+            if done % 50 == 0 or done == total:
+                logger.info("Yahoo Finance: progress %s/%s tickers", done, total)
 
     tickers_attempted = len(tickers)
     tickers_succeeded = len(results)
@@ -330,6 +372,12 @@ def fetch_component_cape(window_years: int = 10) -> ComponentCapeResult:
             "tickers_attempted": tickers_attempted,
             "tickers_succeeded": tickers_succeeded,
         },
+    )
+
+    logger.info(
+        "Yahoo Finance: component CAPE done (coverage %s, %.1f×)",
+        f"{coverage:.0%}",
+        component_cape,
     )
 
     return ComponentCapeResult(

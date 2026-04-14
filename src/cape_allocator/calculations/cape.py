@@ -116,9 +116,9 @@ def compute_component_cape(
     if np.any(mean_real_eps <= 0):
         raise ValueError("All mean_real_eps must be strictly positive.")
 
-    individual_capes = prices / mean_real_eps          # eq. (12)
-    weights = market_caps / market_caps.sum()          # eq. (16) weights
-    return float(np.dot(weights, individual_capes))    # eq. (16) aggregation
+    individual_capes = prices / mean_real_eps  # eq. (12)
+    weights = market_caps / market_caps.sum()  # eq. (16) weights
+    return float(np.dot(weights, individual_capes))  # eq. (16) aggregation
 
 
 def forecast_10y_return(cape: float) -> float:

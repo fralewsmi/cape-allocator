@@ -16,11 +16,14 @@ yfinance constituent coverage drops below the 80% threshold.
 from __future__ import annotations
 
 import io
+import logging
 
 import pandas as pd
 import requests
 
 from cape_allocator.data.cache import cache_get, cache_set
+
+logger = logging.getLogger(__name__)
 
 _SHILLER_URL = "http://www.econ.yale.edu/~shiller/data/ie_data.xls"
 _CACHE_KEY = "shiller_aggregate_cape"
@@ -46,8 +49,10 @@ def fetch_aggregate_cape() -> tuple[float, str]:
     """
     cached = cache_get(_CACHE_KEY)
     if cached is not None:
+        logger.info("Shiller: cache hit (aggregate CAPE %.2f×)", cached["cape"])
         return cached["cape"], cached["source"]
 
+    logger.info("Shiller: downloading ie_data.xls from Yale…")
     try:
         response = requests.get(_SHILLER_URL, timeout=30)
         response.raise_for_status()
@@ -73,4 +78,5 @@ def fetch_aggregate_cape() -> tuple[float, str]:
 
     result = {"cape": cape, "source": _SHILLER_URL}
     cache_set(_CACHE_KEY, result)
+    logger.info("Shiller: latest aggregate CAPE %.2f×", cape)
     return cape, _SHILLER_URL

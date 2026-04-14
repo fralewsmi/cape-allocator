@@ -17,15 +17,20 @@ Usage examples
 
     # Clear the local cache then run:
     cape-allocator --clear-cache
+
+    # Verbose fetch progress (FRED, Wikipedia, Yahoo, Shiller):
+    cape-allocator -v
 """
 
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 from datetime import date
 
 from rich.console import Console
+from rich.logging import RichHandler
 from rich.panel import Panel
 from rich.prompt import FloatPrompt, Prompt
 from rich.rule import Rule
@@ -101,13 +106,54 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Override: supply TIPS yield directly as decimal (skips FRED fetch).",
     )
-    parser.add_argument("--clear-cache", action="store_true",
-                        help="Clear all cached market data before running.")
+    parser.add_argument(
+        "--clear-cache",
+        action="store_true",
+        help="Clear all cached market data before running.",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="More detail in fetch progress (-vv for debug).",
+    )
+    parser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="Suppress fetch progress logging.",
+    )
     return parser
 
 
-def _prompt_if_none(value: float | None, label: str, default: float,
-                    min_val: float, max_val: float) -> float:
+def _configure_cli_logging(*, verbose: int, quiet: bool) -> None:
+    """Attach a Rich log handler to ``cape_allocator`` loggers (CLI only)."""
+    if quiet:
+        level = logging.WARNING
+    elif verbose >= 2:
+        level = logging.DEBUG
+    else:
+        level = logging.INFO
+
+    log = logging.getLogger("cape_allocator")
+    log.handlers.clear()
+    log.setLevel(level)
+    handler = RichHandler(
+        console=console,
+        show_time=True,
+        show_path=False,
+        markup=False,
+        rich_tracebacks=True,
+    )
+    handler.setLevel(level)
+    log.addHandler(handler)
+    log.propagate = False
+
+
+def _prompt_if_none(
+    value: float | None, label: str, default: float, min_val: float, max_val: float
+) -> float:
     if value is not None:
         return value
     console.print(f"  [dim]{label}[/dim]")
@@ -127,8 +173,12 @@ def _prompt_variant_if_none(variant_str: str | None) -> CapeVariant:
     console.print()
     console.print("  [bold]CAPE variant[/bold]")
     for i, v in enumerate(_VARIANT_CHOICES, 1):
-        oos = {"component_10y": "57.5%", "component_5y": "55.1%",
-               "component_ewma": "56.8%", "aggregate_10y": "46.7%"}.get(v, "")
+        oos = {
+            "component_10y": "57.5%",
+            "component_5y": "55.1%",
+            "component_ewma": "56.8%",
+            "aggregate_10y": "46.7%",
+        }.get(v, "")
         marker = " [green](recommended)[/green]" if v == "component_10y" else ""
         console.print(f"  [{i}] {v}  OOS R²={oos}{marker}")
     choice = Prompt.ask(
@@ -260,9 +310,7 @@ def _render_result(result: AllocationResult) -> None:
         Panel(
             table,
             title="[bold]Cape Allocator — Portfolio Allocation[/bold]",
-            subtitle=(
-                "Ma et al. (2026) · Haghani & White (2022) · Merton (1971)"
-            ),
+            subtitle=("Ma et al. (2026) · Haghani & White (2022) · Merton (1971)"),
             padding=(1, 2),
         )
     )
@@ -272,8 +320,11 @@ def main() -> None:
     parser = _build_parser()
     args = parser.parse_args()
 
+    _configure_cli_logging(verbose=args.verbose, quiet=args.quiet)
+
     if args.clear_cache:
         from cape_allocator.data.cache import cache_clear
+
         cache_clear()
         console.print("[green]Cache cleared.[/green]")
 
@@ -299,16 +350,25 @@ def main() -> None:
         max_val=20.0,
     )
     sigma = _prompt_if_none(
-        args.sigma, "Equity volatility σ  (Haghani & White default: 0.18)",
-        default=0.18, min_val=0.05, max_val=0.60,
+        args.sigma,
+        "Equity volatility σ  (Haghani & White default: 0.18)",
+        default=0.18,
+        min_val=0.05,
+        max_val=0.60,
     )
     min_equity = _prompt_if_none(
-        args.min_equity, "Minimum equity allocation (floor, e.g. 0.0 for no floor)",
-        default=0.0, min_val=0.0, max_val=1.0,
+        args.min_equity,
+        "Minimum equity allocation (floor, e.g. 0.0 for no floor)",
+        default=0.0,
+        min_val=0.0,
+        max_val=1.0,
     )
     max_equity = _prompt_if_none(
-        args.max_equity, "Maximum equity allocation (cap, e.g. 1.0 for no leverage)",
-        default=1.0, min_val=0.0, max_val=1.5,
+        args.max_equity,
+        "Maximum equity allocation (cap, e.g. 1.0 for no leverage)",
+        default=1.0,
+        min_val=0.0,
+        max_val=1.5,
     )
     variant = _prompt_variant_if_none(args.cape_variant)
 
@@ -348,9 +408,13 @@ def main() -> None:
                 "  [yellow]Both --cape and --tips must be supplied together "
                 "to skip live fetching.  Fetching live data instead.[/yellow]"
             )
+        if not args.quiet:
+            console.print(
+                "  [dim]Live fetch progress is logged below "
+                "(-v for more detail, -q to hide).[/dim]"
+            )
+            console.print()
         try:
-            console.print("  Fetching constituent CAPE from yfinance…")
-            console.print("  Fetching TIPS yield from FRED…")
             result = fetch_market_inputs_and_allocate(investor)
         except OSError as exc:
             console.print(f"\n[red]Configuration error: {exc}[/red]")
