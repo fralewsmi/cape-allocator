@@ -1,18 +1,10 @@
 # Component CAPE + Merton Rule Portfolio Allocator
 
-I became interested in optimal equity allocation after reading Shiller's Irrational Exuberance and tracking his CAPE ratio during the high equity valuations in 2025 during the AI bubble and Trump's tariffs.
+I became interested in optimal equity allocation after reading Shiller's Irrational Exuberance and tracking his CAPE ratio during the high equity valuations in 2025 with the AI bubble and global tariffs.
 
 [This FTAV article](https://www.ft.com/content/84b8a579-8634-47de-a421-a1eb39c8577d) by Toby Nangle pointed me to Ma, Marshall, Nguyen & Visaltanachoti (2026), who proposed the component CAPE as a new model that provides higher accuracy for returns prediction.
 
-CAPE-implied equity allocation by risk aversion
-
-Each curve shows the Merton Rule optimal equity allocation
-
-$$f^* = \frac{\mu}{\gamma \cdot \sigma^2}$$
-
-across the CAPE range for a given risk aversion level γ, evaluated at long-run historical averages (TIPS 1.70%, σ 18%). The dashed line marks the Component CAPE historical mean of 29.74× (Ma et al., 2026).
-
-I thought it would be fun to test this out using the Merton Rule framework proposed by [Haghani & White (2022)](https://elmwealth.com/earnings-yield-dynamic-allocation/)., using the excess yield over the TIPS rate to establish the equity risk premium.
+I thought it would be fun to test this out using the Merton Rule framework proposed by [Haghani & White (2022)](https://elmwealth.com/earnings-yield-dynamic-allocation/), using the excess yield over the TIPS rate to establish the equity risk premium.
 
 **Merton Rule:**
 
@@ -82,7 +74,8 @@ Responses are cached under `CAPE_CACHE_DIR` (default `~/.cache/cape_allocator`).
 - **[Yahoo Finance](https://finance.yahoo.com/)** via [yfinance](https://github.com/ranaroussi/yfinance): prices, market cap, EPS (unofficial).
 - **[Shiller CAPE spreadsheet](http://www.econ.yale.edu/~shiller/data/ie_data.xls)** (Yale): aggregate CAPE and low-coverage fallback.
 
-`--cape` and `--tips` together skip live CAPE/TIPS fetches. CLI fetch logs: `-v` / `-q` (see `--help`).
+`--cape` and `--tips` together skip live CAPE/TIPS fetches.
+Adjust CLI fetch logs: `-v` (verbose) / `-q` (quiet).
 
 ## Development
 
