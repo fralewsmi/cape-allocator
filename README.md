@@ -22,6 +22,22 @@ where:
 
 _Chart created via Claude to visualise the model, not a live part of the allocator output._
 
+## Installation
+
+```bash
+# Create and activate virtual environment (or use venv, conda, etc.)
+uv venv && source .venv/bin/activate
+
+# Install dependencies (core only for basic usage)
+uv pip install -e "."
+
+# OR install with development tools
+uv pip install -e ".[dev]"
+
+# Copy environment file
+cp .env.example .env   # add your FRED API key
+```
+
 ## Usage
 
 ```bash
@@ -38,7 +54,7 @@ cape-allocator --cape 56.0 --tips 0.022  # m2qanual override, no API needed
 
 ### Choosing γ (risk aversion)
 
-A useful starting point is to ask: _how would a permanent 50% loss of wealth affect my life?_ If survivable but painful, you are likely `γ = 2`. If it would materially alter your lifestyle, `γ = 5`. If catastrophic, `γ = 10`.
+A standard heuristic is to ask: _how would a permanent 50% loss of wealth affect my life?_
 
 | γ   | Profile                                                                   |
 | --- | ------------------------------------------------------------------------- |
@@ -49,21 +65,13 @@ A useful starting point is to ask: _how would a permanent 50% loss of wealth aff
 
 Note that `γ` should reflect _financial_ risk aversion rather than emotional comfort. A large pension or guaranteed income effectively lowers your financial `γ` even if markets make you nervous. See [Haghani & White (2018)](https://elmwealth.com/measuring-the-fabric-of-felicity/)
 
-## Installation
+### Choosing equity bounds
 
-```bash
-# Create and activate virtual environment (or use venv, conda, etc.)
-uv venv && source .venv/bin/activate
+Of course this model goes against the prevailing advice for savers to always maintain a baseline level of equities, and avoid the sin of timing the market. We can build this advice into the model by adjusting the equity bounds accordingly.
 
-# Install dependencies (core only for basic usage)
-uv pip install -e "."
+It is common to see 60/40 as a default allocation, which we could apply with the params `--min_equity .4 --max_equity .6`, the range dependant on how far we can tolerate departing from the baseline.
 
-# OR install with development tools
-uv pip install -e ".[dev]"
-
-# Copy environment file
-cp .env.example .env   # add your FRED API key
-```
+A young investor may expect at least 50% equities and so would apply `--min_equity .5`.
 
 ## Data sources
 
