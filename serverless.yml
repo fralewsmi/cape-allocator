@@ -1,10 +1,10 @@
 service: cape-allocator-api
 
-frameworkVersion: '3'
+frameworkVersion: "3"
 
 provider:
   name: aws
-  runtime: python3.11
+  runtime: python3.12
   stage: dev
   region: us-east-1
   environment:
