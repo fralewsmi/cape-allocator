@@ -1,9 +1,5 @@
 """
 Tests for health endpoint.
-
-Ma et al. (2026) SSRN 6060895 — Component CAPE
-Haghani & White (2022) Elm Wealth — Excess Earnings Yield + Merton Rule
-Merton (1971) Journal of Economic Theory — Merton Rule formula
 """
 
 from unittest.mock import patch

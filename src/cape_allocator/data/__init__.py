@@ -1,9 +1,5 @@
 """
 Data fetching and caching utilities.
-
-Ma et al. (2026) SSRN 6060895 — Component CAPE
-Haghani & White (2022) Elm Wealth — Excess Earnings Yield + Merton Rule
-Merton (1971) Journal of Economic Theory — Merton Rule formula
 """
 
 from concurrent.futures import ThreadPoolExecutor
