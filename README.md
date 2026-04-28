@@ -33,14 +33,14 @@ uv venv && source .venv/bin/activate
 # Install dependencies (core only for basic usage)
 uv pip install -e "."
 
-# OR install with development tools
+# Install with specific optional groups
+uv pip install -e ".[test]"       # testing tools (pytest, pytest-cov, hypothesis)
+uv pip install -e ".[lint]"       # linting tools (ruff)
+uv pip install -e ".[type]"       # type checking (ty)
+uv pip install -e ".[api]"        # API server (fastapi, mangum, uvicorn, httpx)
+
+# Install all development and API tools
 uv pip install -e ".[dev]"
-
-# OR install with API dependencies
-uv pip install -e ".[api]"
-
-# OR install everything
-uv pip install -e ".[dev,api]"
 
 # Copy environment file
 cp .env.example .env   # add your FRED API key
@@ -165,6 +165,18 @@ Responses are cached under `CAPE_CACHE_DIR` (default `~/.cache/cape_allocator`).
 Adjust CLI fetch logs: `-v` (verbose) / `-q` (quiet).
 
 ## Development
+
+### Optional Dependencies
+
+This project uses modular optional dependencies for different development tasks:
+
+- **`[test]`**: Testing with pytest, pytest-cov, and hypothesis
+- **`[lint]`**: Code linting and formatting with Ruff
+- **`[type]`**: Type checking with ty
+- **`[api]`**: FastAPI server stack (fastapi, mangum, uvicorn, httpx)
+- **`[dev]`**: All of the above (meta-group for complete development environment)
+
+Install any combination: `pip install -e ".[test,lint,type]"` or just `pip install -e ".[dev]"` for everything.
 
 ### Type Checking
 
