@@ -83,3 +83,28 @@ def cache_clear(key: str | None = None) -> None:
     else:
         for f in _cache_dir().glob("*.json"):
             f.unlink()
+
+
+def get_cache_age_hours(cache_dir: str | None = None) -> float | None:
+    """
+    Get the age in hours of the oldest cache entry.
+
+    Returns None if no cache files exist.
+    """
+    cache_path = Path(cache_dir or _cache_dir())
+    if not cache_path.exists():
+        return None
+    files = list(cache_path.glob("*.json"))
+    if not files:
+        return None
+    now = datetime.now(tz=UTC)
+    ages = []
+    for f in files:
+        try:
+            payload = json.loads(f.read_text())
+            fetched_at = datetime.fromisoformat(payload["fetched_at"])
+            age = (now - fetched_at).total_seconds() / 3600
+            ages.append(age)
+        except Exception:
+            continue
+    return max(ages) if ages else None

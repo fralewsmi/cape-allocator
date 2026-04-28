@@ -19,6 +19,7 @@ Uses the FRED REST API (``series/observations``).  Requires FRED_API_KEY in
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 
@@ -47,6 +48,31 @@ def _fred_api_key() -> str:
             "Free registration: https://fred.stlouisfed.org/docs/api/api_key.html"
         )
     return api_key
+
+
+async def check_fred_connectivity(api_key: str) -> bool:
+    """
+    Check if FRED API is reachable by fetching a small amount of data.
+    """
+    loop = asyncio.get_event_loop()
+    try:
+        response = await loop.run_in_executor(
+            None,
+            lambda: requests.get(
+                _FRED_OBSERVATIONS,
+                params={
+                    "series_id": _DAILY_SERIES,
+                    "api_key": api_key,
+                    "limit": 1,
+                    "sort_order": "desc",
+                    "file_type": "json",
+                },
+                timeout=5,
+            ),
+        )
+        return response.status_code == 200
+    except Exception:
+        return False
 
 
 def _fetch_fred_series(

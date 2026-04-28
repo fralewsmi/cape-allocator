@@ -27,6 +27,12 @@ dev = [
     "ty>=0.0.1",
     "hypothesis>=6.100",
 ]
+api = [
+    "fastapi>=0.100",
+    "mangum>=0.17",
+    "uvicorn>=0.23",
+    "httpx>=0.25",
+]
 
 [project.scripts]
 cape-allocator = "cape_allocator.cli.main:main"
@@ -55,6 +61,7 @@ allowed-unresolved-imports = ["*.**"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
+pythonpath = ["."]
 
 [tool.coverage.run]
 source = ["cape_allocator"]

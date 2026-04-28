@@ -46,6 +46,14 @@ EARNINGS_WINDOW_YEARS: dict[CapeVariant, int] = {
     CapeVariant.AGGREGATE_10Y: 10,
 }
 
+# Out-of-sample R² from Ma et al. (2026) Table 3, constant-slope approach, OOS 1974–2015
+OOS_R2: dict[CapeVariant, float] = {
+    CapeVariant.COMPONENT_10Y: 0.5752,
+    CapeVariant.COMPONENT_5Y: 0.5505,
+    CapeVariant.COMPONENT_EWMA: 0.5680,
+    CapeVariant.AGGREGATE_10Y: 0.4667,
+}
+
 
 class InvestorParams(BaseModel):
     """

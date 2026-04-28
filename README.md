@@ -24,6 +24,8 @@ _Chart created via Claude to visualise the model, not a live part of the allocat
 
 ## Installation
 
+### Core Library
+
 ```bash
 # Create and activate virtual environment (or use venv, conda, etc.)
 uv venv && source .venv/bin/activate
@@ -34,11 +36,47 @@ uv pip install -e "."
 # OR install with development tools
 uv pip install -e ".[dev]"
 
+# OR install with API dependencies
+uv pip install -e ".[api]"
+
+# OR install everything
+uv pip install -e ".[dev,api]"
+
 # Copy environment file
 cp .env.example .env   # add your FRED API key
 ```
 
+### API Server
+
+For the FastAPI web service:
+
+```bash
+# Set environment variables
+export FRED_API_KEY="your_fred_api_key"
+export CORS_ORIGINS="https://your-frontend.com"  # optional, defaults to *
+
+# Run locally
+uvicorn api.main:app --reload
+
+# Or with Docker
+docker build -t cape-allocator .
+docker run -p 8000:8000 -e FRED_API_KEY=... cape-allocator
+```
+
+### AWS Lambda Deployment
+
+```bash
+# Install SAM CLI
+pip install aws-sam-cli
+
+# Deploy to AWS
+sam build
+sam deploy --guided
+```
+
 ## Usage
+
+### CLI
 
 ```bash
 cape-allocator # interactive
@@ -52,6 +90,39 @@ cape-allocator --cape 56.0 --tips 0.022  # manual override, no API needed
 - `--sigma` can generally be left at the default 18%, which is the long-run historical average
 
 `cape-allocator --help` For more options
+
+### API
+
+The FastAPI server provides REST endpoints for integration with web frontends.
+
+#### Endpoints
+
+- `GET /health` - Health check with cache and FRED status
+- `GET /api/market-inputs` - Fetch current CAPE and TIPS data
+- `GET /api/cape-variants` - List available CAPE variants
+- `POST /api/allocation` - Compute allocation with live data
+- `POST /api/allocation/manual` - Compute allocation with manual inputs
+- `GET /api/sensitivity` - Stream sensitivity analysis (NDJSON)
+
+#### Example Requests
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Get market inputs
+curl "http://localhost:8000/api/market-inputs?cape_variant=component_10y"
+
+# Compute allocation
+curl -X POST http://localhost:8000/api/allocation \
+  -H "Content-Type: application/json" \
+  -d '{"gamma": 2.0, "sigma": 0.18}'
+
+# Manual allocation
+curl -X POST http://localhost:8000/api/allocation/manual \
+  -H "Content-Type: application/json" \
+  -d '{"gamma": 2.0, "sigma": 0.18, "cape_value": 30.0, "tips_yield": 0.02}'
+```
 
 ### Choosing γ (risk aversion)
 
@@ -73,6 +144,7 @@ The model includes a 12-month momentum overlay following Haghani & White (2022) 
 $$f_\text{blended} = (1 - w) \cdot f_\text{merton} + w \cdot f_\text{momentum}$$
 
 Where:
+
 - $f_\text{momentum} = 1.0$ if 12-month S&P 500 momentum is positive, $0.0$ otherwise
 - $w$ is the momentum weight (0.0 = pure Merton, 1.0 = pure momentum)
 
