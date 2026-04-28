@@ -7,7 +7,7 @@ Usage examples
     cape-allocator
 
     # Fully specified via flags:
-    cape-allocator --gamma 2.0 --sigma 0.18 --min-equity 0.0 --max-equity 1.0
+    cape-allocator --gamma 2.0 --sigma 0.18 --momentum-weight 0.5
 
     # Mixed: flags provided for some, prompts for the rest:
     cape-allocator --gamma 3.0 --cape-variant component_10y
@@ -56,6 +56,11 @@ _SIGMA_HELP = (
     "Expected annualised equity volatility σ (decimal).  "
     "Default 0.18 per Haghani & White (2022)."
 )
+_MOMENTUM_WEIGHT_HELP = (
+    "Weight for momentum overlay (decimal).  "
+    "0.0 = pure Merton, 0.5 = equal blend (Asness et al. 2013).  "
+    "Default 0.0 to preserve current behavior."
+)
 _VARIANT_HELP = (
     "CAPE variant.  component_10y is the Ma et al. (2026) baseline "
     "(OOS R²=57.5 percent).  aggregate_10y is traditional Shiller "
@@ -77,16 +82,10 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--gamma", type=float, default=None, help=_GAMMA_HELP)
     parser.add_argument("--sigma", type=float, default=None, help=_SIGMA_HELP)
     parser.add_argument(
-        "--min-equity",
+        "--momentum-weight",
         type=float,
         default=None,
-        help="Minimum equity allocation (floor), decimal.  Default 0.0.",
-    )
-    parser.add_argument(
-        "--max-equity",
-        type=float,
-        default=None,
-        help="Maximum equity allocation (cap), decimal.  Default 1.0.",
+        help=_MOMENTUM_WEIGHT_HELP,
     )
     parser.add_argument(
         "--cape-variant",
@@ -261,6 +260,16 @@ def _render_result(result: AllocationResult) -> None:
         f"{result.merton_share_unconstrained:.1%}",
         f"μ / (γ·σ²)  γ={result.gamma}  σ={result.sigma:.0%}  (Merton, 1971)",
     )
+    table.add_row(
+        "  Momentum signal",
+        f"{result.momentum_signal:+.1%}",
+        "12-month S&P 500 return (t-12 to t-1)  (Haghani & White, 2022)",
+    )
+    table.add_row(
+        "  Momentum allocation",
+        f"{result.f_momentum:.0%}",
+        "Binary: 100% if momentum > 0, else 0%  (Asness et al., 2013)",
+    )
 
     table.add_row("", "", "")
 
@@ -293,9 +302,9 @@ def _render_result(result: AllocationResult) -> None:
     table.add_row("  Risk aversion γ", f"{result.gamma}", "CRRA coefficient")
     table.add_row("  Equity volatility σ", f"{result.sigma:.0%}", "")
     table.add_row(
-        "  Allocation bounds",
-        f"{result.min_equity:.0%} – {result.max_equity:.0%}",
-        "",
+        "  Momentum weight",
+        f"{result.momentum_weight:.0%}",
+        "Weight for momentum overlay (0.0 = pure Merton)",
     )
 
     # Footer
@@ -356,19 +365,12 @@ def main() -> None:
         min_val=0.05,
         max_val=0.60,
     )
-    min_equity = _prompt_if_none(
-        args.min_equity,
-        "Minimum equity allocation (floor, e.g. 0.0 for no floor)",
+    momentum_weight = _prompt_if_none(
+        args.momentum_weight,
+        "Momentum overlay weight (e.g. 0.5 for equal blend with Merton)",
         default=0.0,
         min_val=0.0,
         max_val=1.0,
-    )
-    max_equity = _prompt_if_none(
-        args.max_equity,
-        "Maximum equity allocation (cap, e.g. 1.0 for no leverage)",
-        default=1.0,
-        min_val=0.0,
-        max_val=1.5,
     )
     variant = _prompt_variant_if_none(args.cape_variant)
 
@@ -376,8 +378,7 @@ def main() -> None:
         investor = InvestorParams(
             gamma=gamma,
             sigma=sigma,
-            min_equity=min_equity,
-            max_equity=max_equity,
+            momentum_weight=momentum_weight,
             cape_variant=variant,
         )
     except Exception as exc:  # noqa: BLE001

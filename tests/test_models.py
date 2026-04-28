@@ -20,14 +20,13 @@ class TestInvestorParams:
         p = InvestorParams()
         assert p.gamma == 2.0
         assert p.sigma == 0.18
-        assert p.min_equity == 0.0
-        assert p.max_equity == 1.0
+        assert p.momentum_weight == 0.0
         assert p.cape_variant == CapeVariant.COMPONENT_10Y
 
     def test_valid_custom_params(self) -> None:
-        p = InvestorParams(gamma=5.0, sigma=0.20, min_equity=0.1, max_equity=1.5)
+        p = InvestorParams(gamma=5.0, sigma=0.20, momentum_weight=0.5)
         assert p.gamma == 5.0
-        assert p.max_equity == 1.5  # Leverage allowed
+        assert p.momentum_weight == 0.5
 
     def test_gamma_too_low_rejected(self) -> None:
         with pytest.raises(ValidationError, match="gamma"):
@@ -44,15 +43,6 @@ class TestInvestorParams:
     def test_sigma_too_high_rejected(self) -> None:
         with pytest.raises(ValidationError, match="sigma"):
             InvestorParams(sigma=0.99)
-
-    def test_inverted_bounds_rejected(self) -> None:
-        """min_equity >= max_equity must be rejected."""
-        with pytest.raises(ValidationError, match="min_equity"):
-            InvestorParams(min_equity=0.6, max_equity=0.4)
-
-    def test_equal_bounds_rejected(self) -> None:
-        with pytest.raises(ValidationError, match="min_equity"):
-            InvestorParams(min_equity=0.5, max_equity=0.5)
 
     def test_json_round_trip(self) -> None:
         p = InvestorParams(gamma=3.0, sigma=0.15)
@@ -95,6 +85,7 @@ class TestMarketInputs:
 class TestCapeVariant:
     def test_all_variants_have_historical_mean(self) -> None:
         from cape_allocator.models.inputs import HISTORICAL_MEAN_CAPE
+
         for v in CapeVariant:
             assert v in HISTORICAL_MEAN_CAPE
             assert HISTORICAL_MEAN_CAPE[v] > 0
@@ -102,11 +93,13 @@ class TestCapeVariant:
     def test_component_10y_mean_matches_paper(self) -> None:
         """Ma et al. (2026) Table 1: Component 10Y mean = 29.74."""
         from cape_allocator.models.inputs import HISTORICAL_MEAN_CAPE
+
         assert HISTORICAL_MEAN_CAPE[CapeVariant.COMPONENT_10Y] == pytest.approx(29.74)
 
     def test_aggregate_10y_mean_matches_paper(self) -> None:
         """Ma et al. (2026) Table 1: Aggregate 10Y mean = 21.65."""
         from cape_allocator.models.inputs import HISTORICAL_MEAN_CAPE
+
         assert HISTORICAL_MEAN_CAPE[CapeVariant.AGGREGATE_10Y] == pytest.approx(21.65)
 
 

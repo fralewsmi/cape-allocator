@@ -26,6 +26,7 @@ from cape_allocator.calculations.merton import (
 
 # ── Deterministic tests ───────────────────────────────────────────────────────
 
+
 class TestComputeExcessEarningsYield:
     def test_positive_excess(self) -> None:
         assert compute_excess_earnings_yield(0.055, 0.022) == pytest.approx(0.033)
@@ -166,14 +167,12 @@ class TestComputeCer:
 
 _GAMMA_ST = st.floats(min_value=0.5, max_value=20.0, allow_nan=False)
 _SIGMA_ST = st.floats(min_value=0.05, max_value=0.60, allow_nan=False)
-_MU_ST    = st.floats(min_value=-0.20, max_value=0.30, allow_nan=False)
-_F_ST     = st.floats(min_value=0.0, max_value=1.5, allow_nan=False)
+_MU_ST = st.floats(min_value=-0.20, max_value=0.30, allow_nan=False)
+_F_ST = st.floats(min_value=0.0, max_value=1.5, allow_nan=False)
 
 
 @given(mu=_MU_ST, gamma=_GAMMA_ST, sigma=_SIGMA_ST)
-def test_merton_share_linear_in_mu(
-    mu: float, gamma: float, sigma: float
-) -> None:
+def test_merton_share_linear_in_mu(mu: float, gamma: float, sigma: float) -> None:
     """f*(2μ) = 2 * f*(μ): the Merton share scales linearly with excess return."""
     f1 = compute_merton_share(mu, gamma, sigma)
     f2 = compute_merton_share(2 * mu, gamma, sigma)
@@ -205,9 +204,7 @@ def test_bounded_allocation_always_in_range(
 
 @given(mu=_MU_ST, gamma=_GAMMA_ST, sigma=_SIGMA_ST)
 @settings(max_examples=300)
-def test_cer_maximised_at_merton_share(
-    mu: float, gamma: float, sigma: float
-) -> None:
+def test_cer_maximised_at_merton_share(mu: float, gamma: float, sigma: float) -> None:
     """
     The unconstrained Merton share maximises CER for any valid (μ, γ, σ).
     Any perturbation should not increase CER.

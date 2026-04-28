@@ -24,10 +24,12 @@ from .cape import (
     compute_earnings_yield,
 )
 from .merton import (
-    apply_allocation_bounds,
     compute_cer,
     compute_excess_earnings_yield,
     compute_merton_share,
+)
+from .momentum import (
+    blend_signals,
 )
 
 _LOW_COVERAGE_THRESHOLD = 0.80
@@ -35,7 +37,7 @@ _HIGH_CAPE_DEVIATION_WARN_PCT = 50.0  # Warn if CAPE > 150% of historical mean
 _NEGATIVE_EEY_CODE = "NEGATIVE_EXCESS_EARNINGS_YIELD"
 _LOW_COVERAGE_CODE = "LOW_CONSTITUENT_COVERAGE"
 _FALLBACK_CODE = "SHILLER_FALLBACK_USED"
-_CONSTRAINED_CODE = "ALLOCATION_CONSTRAINED"
+_BLENDED_CODE = "ALLOCATION_BLENDED"
 _HIGH_CAPE_CODE = "CAPE_SIGNIFICANTLY_ABOVE_MEAN"
 
 logger = logging.getLogger(__name__)
@@ -56,7 +58,7 @@ def compute_allocation(
     investor : InvestorParams
         Investor risk preferences and allocation bounds.
     market : MarketInputs
-        Pre-fetched market data (CAPE value, TIPS yield, coverage).
+        Pre-fetched market data (CAPE value, TIPS yield, momentum signal, coverage).
 
     Returns
     -------
@@ -129,24 +131,30 @@ def compute_allocation(
                 )
             )
 
-    # ── Step 5: Merton Rule ───────────────────────────────────────────────
+    # ── Step 5: Fetch momentum data ─────────────────────────────────────────
+    if market.momentum_signal is not None:
+        momentum_signal = market.momentum_signal
+    else:
+        # Fallback: assume neutral momentum (no signal)
+        momentum_signal = 0.0
+
+    # ── Step 6: Merton Rule ───────────────────────────────────────────────
     # f* = μ / (γ · σ²)   — Merton (1971)
     merton_raw = compute_merton_share(eey, investor.gamma, investor.sigma)
 
-    # ── Step 6: Apply investor bounds ─────────────────────────────────────
-    f_star = apply_allocation_bounds(
-        merton_raw, investor.min_equity, investor.max_equity
-    )
+    # ── Step 7: Blend with momentum ───────────────────────────────────────
+    f_star = blend_signals(merton_raw, momentum_signal, investor.momentum_weight)
 
     if f_star != merton_raw:
-        bound = "minimum" if merton_raw < investor.min_equity else "maximum"
         warnings.append(
             DataWarning(
                 severity=WarningSeverity.INFO,
-                code=_CONSTRAINED_CODE,
+                code=_BLENDED_CODE,
                 message=(
-                    f"Unconstrained Merton share ({merton_raw:.1%}) was clamped to "
-                    f"the {bound} equity allocation ({f_star:.1%})."
+                    f"Merton allocation ({merton_raw:.1%}) blended with momentum "
+                    f"signal ({momentum_signal:.1%})"
+                    f"using weight {investor.momentum_weight:.1%},"
+                    f"resulting in {f_star:.1%} equity allocation."
                 ),
             )
         )
@@ -162,14 +170,15 @@ def compute_allocation(
         tips_yield=market.tips_yield,
         gamma=investor.gamma,
         sigma=investor.sigma,
-        min_equity=investor.min_equity,
-        max_equity=investor.max_equity,
+        momentum_weight=investor.momentum_weight,
         as_of_date=market.as_of_date,
         constituent_coverage=market.constituent_coverage,
         # Signals
         earnings_yield=ey,
         excess_earnings_yield=eey,
         merton_share_unconstrained=merton_raw,
+        momentum_signal=momentum_signal,
+        f_momentum=1.0 if momentum_signal > 0 else 0.0,
         equity_allocation=f_star,
         tips_allocation=1.0 - f_star,
         cer=cer,
@@ -199,8 +208,13 @@ def fetch_market_inputs_and_allocate(investor: InvestorParams) -> AllocationResu
     # Import here to keep calculations/ free of I/O at module level
     from cape_allocator.data.fred import fetch_tips_yield
     from cape_allocator.data.shiller import fetch_aggregate_cape
-    from cape_allocator.data.yfinance import fetch_component_cape
+    from cape_allocator.data.yfinance import (
+        fetch_component_cape,
+        fetch_sp500_monthly_prices,
+    )
     from cape_allocator.models.inputs import EARNINGS_WINDOW_YEARS
+
+    from .momentum import compute_momentum_signal
 
     variant = investor.cape_variant
     warnings_pre: list[DataWarning] = []
@@ -270,13 +284,24 @@ def fetch_market_inputs_and_allocate(investor: InvestorParams) -> AllocationResu
         finally:
             tips_yield, _ = tips_future.result()
 
-    logger.info("Market data: fetch phase complete (CAPE + TIPS).")
+    # Fetch momentum signal
+    logger.info("Market data: fetching S&P 500 momentum signal…")
+    try:
+        sp500_prices = fetch_sp500_monthly_prices()
+        momentum_signal = compute_momentum_signal(sp500_prices)
+        logger.info("Market data: momentum signal = %.1f%%", momentum_signal * 100)
+    except Exception as e:
+        logger.warning("Market data: failed to fetch momentum signal: %s", e)
+        momentum_signal = None
+
+    logger.info("Market data: fetch phase complete (CAPE + TIPS + Momentum).")
 
     market = MarketInputs(
         cape_value=cape_value,
         tips_yield=tips_yield,
         cape_variant=variant,
         constituent_coverage=constituent_coverage,
+        momentum_signal=momentum_signal,
         as_of_date=date.today(),
     )
 

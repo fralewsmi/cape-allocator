@@ -18,6 +18,7 @@ from cape_allocator.models.inputs import CapeVariant, InvestorParams, MarketInpu
 
 # ── Deterministic end-to-end tests ───────────────────────────────────────────
 
+
 class TestComputeAllocationDeterministic:
     def test_haghani_white_calibration_full_chain(
         self,
@@ -36,19 +37,20 @@ class TestComputeAllocationDeterministic:
         assert result.tips_allocation == pytest.approx(0.375, rel=1e-4)
         assert result.cer == pytest.approx(0.015625, rel=1e-4)
 
-    def test_end_2024_component_cape_gives_low_equity(
+    def test_end_2024_component_cape_gives_negative_equity(
         self,
         standard_investor: InvestorParams,
         current_market_approx: MarketInputs,
     ) -> None:
         """
         At Component CAPE ~56× and TIPS ~2%, EEY ≈ -0.21%.
-        The Merton share is negative; after floor it should be 0%.
+        The Merton share is negative and with momentum_weight=0.0,
+        the allocation remains negative (no hard floor).
         """
         result = compute_allocation(standard_investor, current_market_approx)
         assert result.excess_earnings_yield < 0
-        assert result.equity_allocation == pytest.approx(0.0)
-        assert result.tips_allocation == pytest.approx(1.0)
+        assert result.equity_allocation < 0  # No longer clamped to 0
+        assert result.tips_allocation > 1.0  # Levered in TIPS to offset short equity
 
     def test_allocation_echoes_inputs(
         self,
@@ -79,23 +81,6 @@ class TestComputeAllocationDeterministic:
         result = compute_allocation(standard_investor, current_market_approx)
         codes = [w.code for w in result.warnings]
         assert "CAPE_SIGNIFICANTLY_ABOVE_MEAN" in codes
-
-    def test_constrained_allocation_attaches_info_warning(self) -> None:
-        """When the Merton share is above the cap, a warning is attached."""
-        investor = InvestorParams(
-            gamma=2.0, sigma=0.18, min_equity=0.0, max_equity=0.30
-        )
-        market = MarketInputs(
-            cape_value=10.0,   # High EY → large Merton share → will hit cap
-            tips_yield=-0.01,
-            cape_variant=CapeVariant.AGGREGATE_10Y,
-            as_of_date=date(2024, 1, 1),
-        )
-        result = compute_allocation(investor, market)
-        assert result.equity_allocation == pytest.approx(0.30)
-        assert result.allocation_is_constrained is True
-        codes = [w.code for w in result.warnings]
-        assert "ALLOCATION_CONSTRAINED" in codes
 
     def test_low_coverage_attaches_warning(self) -> None:
         investor = InvestorParams()
@@ -161,43 +146,11 @@ class TestComputeAllocationDeterministic:
 
 # ── Property-based tests (Hypothesis) ────────────────────────────────────────
 
-_CAPE_ST   = st.floats(min_value=1.0, max_value=500.0, allow_nan=False)
-_TIPS_ST   = st.floats(min_value=-0.05, max_value=0.10, allow_nan=False)
-_GAMMA_ST  = st.floats(min_value=0.5, max_value=20.0, allow_nan=False)
-_SIGMA_ST  = st.floats(min_value=0.05, max_value=0.60, allow_nan=False)
-_BOUND_ST  = st.floats(min_value=0.0, max_value=0.45, allow_nan=False)
-
-
-@given(
-    cape=_CAPE_ST,
-    tips=_TIPS_ST,
-    gamma=_GAMMA_ST,
-    sigma=_SIGMA_ST,
-    min_eq=_BOUND_ST,
-)
-@settings(max_examples=500)
-def test_allocation_always_within_bounds(
-    cape: float, tips: float, gamma: float, sigma: float, min_eq: float
-) -> None:
-    """
-    For any valid combination of inputs, the equity allocation must be
-    within [min_equity, max_equity].
-    """
-    max_eq = min_eq + 0.55  # Ensure max > min
-    investor = InvestorParams(
-        gamma=gamma,
-        sigma=sigma,
-        min_equity=min_eq,
-        max_equity=max_eq,
-    )
-    market = MarketInputs(
-        cape_value=cape,
-        tips_yield=tips,
-        cape_variant=CapeVariant.AGGREGATE_10Y,
-        as_of_date=date(2024, 1, 1),
-    )
-    result = compute_allocation(investor, market)
-    assert min_eq - 1e-10 <= result.equity_allocation <= max_eq + 1e-10
+_CAPE_ST = st.floats(min_value=1.0, max_value=500.0, allow_nan=False)
+_TIPS_ST = st.floats(min_value=-0.05, max_value=0.10, allow_nan=False)
+_GAMMA_ST = st.floats(min_value=0.5, max_value=20.0, allow_nan=False)
+_SIGMA_ST = st.floats(min_value=0.05, max_value=0.60, allow_nan=False)
+_BOUND_ST = st.floats(min_value=0.0, max_value=0.45, allow_nan=False)
 
 
 @given(

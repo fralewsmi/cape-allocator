@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import date
 from enum import StrEnum
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 
 class CapeVariant(StrEnum):
@@ -82,34 +82,20 @@ class InvestorParams(BaseModel):
             "and AllocateSmartly's implementation of the strategy."
         ),
     )
-    min_equity: float = Field(
+    momentum_weight: float = Field(
         default=0.0,
         ge=0.0,
         le=1.0,
-        description="Minimum equity allocation (floor), as a decimal.",
-    )
-    max_equity: float = Field(
-        default=1.0,
-        ge=0.0,
-        le=1.5,
         description=(
-            "Maximum equity allocation (cap), as a decimal. "
-            "Values above 1.0 imply leverage."
+            "Weight given to momentum signal in blending with Merton allocation. "
+            "0.0 = pure Merton, 0.5 = equal blend (Asness et al. 2013). "
+            "Momentum signal is binary: 100% if positive, 0% if negative."
         ),
     )
     cape_variant: CapeVariant = Field(
         default=CapeVariant.COMPONENT_10Y,
         description="CAPE earnings-averaging methodology to use.",
     )
-
-    @model_validator(mode="after")
-    def bounds_are_consistent(self) -> InvestorParams:
-        if self.min_equity >= self.max_equity:
-            raise ValueError(
-                f"min_equity ({self.min_equity}) must be strictly less than "
-                f"max_equity ({self.max_equity})."
-            )
-        return self
 
 
 class MarketInputs(BaseModel):
@@ -154,6 +140,14 @@ class MarketInputs(BaseModel):
         description=(
             "Fraction of S&P 500 market cap successfully fetched (0–1). "
             "None if using aggregate data. Below 0.80 triggers fallback."
+        ),
+    )
+    momentum_signal: float | None = Field(
+        default=None,
+        description=(
+            "12-month S&P 500 price momentum (decimal). "
+            "None if momentum data unavailable. "
+            "Used for blending with Merton allocation."
         ),
     )
     as_of_date: date = Field(

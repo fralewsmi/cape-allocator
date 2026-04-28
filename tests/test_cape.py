@@ -27,6 +27,7 @@ from cape_allocator.models.inputs import HISTORICAL_MEAN_CAPE, CapeVariant
 
 # ── Deterministic tests ───────────────────────────────────────────────────────
 
+
 class TestComputeEarningsYield:
     def test_cape_of_28_gives_approximately_357_bps(self) -> None:
         """1/28 ≈ 3.571%"""
@@ -77,9 +78,9 @@ class TestComputeComponentCape:
     """
 
     # Values from Ma et al. (2026) Table A2
-    _PRICES    = np.array([10_000.0, 20_000.0, 30_000.0, 40_000.0, 50_000.0])
-    _MEAN_EPS  = np.array([1_146.0, 1_201.0, 3_825.0, 2_000.0, 3_139.0])
-    _MCAPS     = np.array([10_000.0, 20_000.0, 30_000.0, 40_000.0, 50_000.0])
+    _PRICES = np.array([10_000.0, 20_000.0, 30_000.0, 40_000.0, 50_000.0])
+    _MEAN_EPS = np.array([1_146.0, 1_201.0, 3_825.0, 2_000.0, 3_139.0])
+    _MCAPS = np.array([10_000.0, 20_000.0, 30_000.0, 40_000.0, 50_000.0])
 
     def test_component_cape_matches_paper_table_a2(self) -> None:
         """
@@ -107,9 +108,7 @@ class TestComputeComponentCape:
 
     def test_empty_arrays_raises(self) -> None:
         with pytest.raises(ValueError):
-            compute_component_cape(
-                np.array([]), np.array([]), np.array([])
-            )
+            compute_component_cape(np.array([]), np.array([]), np.array([]))
 
     def test_zero_market_cap_raises(self) -> None:
         with pytest.raises(ValueError, match="market_caps"):
@@ -139,8 +138,8 @@ class TestComputeComponentCape:
     def test_equal_weights_gives_simple_mean(self) -> None:
         """With equal market caps, Component CAPE = simple mean of individual CAPEs."""
         prices = np.array([100.0, 200.0, 300.0])
-        eps    = np.array([10.0,  10.0,  10.0])   # Individual CAPEs: 10, 20, 30
-        mcaps  = np.array([1.0,   1.0,   1.0])
+        eps = np.array([10.0, 10.0, 10.0])  # Individual CAPEs: 10, 20, 30
+        mcaps = np.array([1.0, 1.0, 1.0])
         result = compute_component_cape(prices, eps, mcaps)
         assert result == pytest.approx(20.0)
 
@@ -184,10 +183,11 @@ class TestCapePercentileVsHistory:
 # ── Property-based tests (Hypothesis) ────────────────────────────────────────
 
 _POSITIVE_FLOAT = st.floats(min_value=0.001, max_value=1000.0, allow_nan=False)
-_CAPE_RANGE     = st.floats(min_value=1.0, max_value=500.0, allow_nan=False)
-_ARRAY_3        = st.lists(
+_CAPE_RANGE = st.floats(min_value=1.0, max_value=500.0, allow_nan=False)
+_ARRAY_3 = st.lists(
     st.floats(min_value=0.01, max_value=1e9, allow_nan=False),
-    min_size=3, max_size=3,
+    min_size=3,
+    max_size=3,
 )
 
 

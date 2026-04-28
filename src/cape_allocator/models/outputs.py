@@ -53,8 +53,7 @@ class AllocationResult(BaseModel):
     tips_yield: float
     gamma: float
     sigma: float
-    min_equity: float
-    max_equity: float
+    momentum_weight: float
     as_of_date: date
     constituent_coverage: float | None
 
@@ -71,10 +70,23 @@ class AllocationResult(BaseModel):
     merton_share_unconstrained: float = Field(
         description="f* = μ / (γ·σ²) before applying allocation bounds (Merton, 1971)."
     )
+    momentum_signal: float = Field(
+        description=(
+            "12-month S&P 500 price return (t-12 to t-1). "
+            "Positive = momentum favors equities (Haghani & White, 2022)."
+        )
+    )
+    f_momentum: float = Field(
+        description=(
+            "Momentum-based allocation: 1.0 if momentum_signal > 0, else 0.0 "
+            "(Asness et al., 2013)."
+        )
+    )
     equity_allocation: float = Field(
         description=(
-            "Constrained optimal equity allocation, "
-            "clamped to [min_equity, max_equity]."
+            "Blended optimal equity allocation: "
+            "momentum_weight * f_momentum"
+            "+ (1-momentum_weight) * merton_share_unconstrained."
         )
     )
     tips_allocation: float = Field(

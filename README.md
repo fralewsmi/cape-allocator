@@ -42,11 +42,12 @@ cp .env.example .env   # add your FRED API key
 
 ```bash
 cape-allocator # interactive
-cape-allocator --gamma 2.0 --sigma 0.18 --cape-variant component_10y
-cape-allocator --cape 56.0 --tips 0.022  # m2qanual override, no API needed
+cape-allocator --gamma 2.0 --sigma 0.18 --momentum-weight 0.5 --cape-variant component_10y
+cape-allocator --cape 56.0 --tips 0.022  # manual override, no API needed
 ```
 
 - `--gamma` is the most consequential choice. `γ = 2` (Haghani & White default) is aggressive; `γ = 5` (Ma et al. calibration) allocates ~30% at the historical mean CAPE.
+- `--momentum-weight` controls blending with 12-month S&P 500 momentum (0.0 = pure Merton, 0.5 = equal blend)
 - `--cape` and `--tips` together set where on the x-axis the program is operating
 - `--sigma` can generally be left at the default 18%, which is the long-run historical average
 
@@ -65,13 +66,19 @@ A standard heuristic is to ask: _how would a permanent 50% loss of wealth affect
 
 Note that `γ` should reflect _financial_ risk aversion rather than emotional comfort. A large pension or guaranteed income effectively lowers your financial `γ` even if markets make you nervous. See [Haghani & White (2018)](https://elmwealth.com/measuring-the-fabric-of-felicity/)
 
-### Choosing equity bounds
+### Momentum overlay
 
-Of course this model goes against the prevailing advice for savers to always maintain a baseline level of equities, and avoid the sin of timing the market. We can build this advice into the model by adjusting the equity bounds accordingly.
+The model includes a 12-month momentum overlay following Haghani & White (2022) and Asness et al. (2013). The momentum signal is blended with the Merton allocation:
 
-It is common to see 60/40 as a default allocation, which we could apply with the params `--min_equity .4 --max_equity .6`, the range dependant on how far we can tolerate departing from the baseline.
+$$f_\text{blended} = (1 - w) \cdot f_\text{merton} + w \cdot f_\text{momentum}$$
 
-A young investor may expect at least 50% equities and so would apply `--min_equity .5`.
+Where:
+- $f_\text{momentum} = 1.0$ if 12-month S&P 500 momentum is positive, $0.0$ otherwise
+- $w$ is the momentum weight (0.0 = pure Merton, 1.0 = pure momentum)
+
+The momentum signal uses the price return from 12 months ago to 1 month ago (excluding the most recent month to avoid short-term reversal effects).
+
+Use `--momentum-weight 0.5` for equal blending (Asness et al. recommendation). When Merton suggests 0% but momentum is positive, this naturally allocates 50% to equities without arbitrary clamps.
 
 ## Data sources
 
@@ -79,7 +86,7 @@ Responses are cached under `CAPE_CACHE_DIR` (default `~/.cache/cape_allocator`).
 
 - **FRED** ([API key](https://fred.stlouisfed.org/docs/api/api_key.html) in `.env`): TIPS `DFII10` / `WFII10`, CPI `CPIAUCSL`.
 - **[Wikipedia](https://en.wikipedia.org/wiki/List_of_S%26P_500_companies)**: S&P 500 tickers.
-- **[Yahoo Finance](https://finance.yahoo.com/)** via [yfinance](https://github.com/ranaroussi/yfinance): prices, market cap, EPS (unofficial).
+- **[Yahoo Finance](https://finance.yahoo.com/)** via [yfinance](https://github.com/ranaroussi/yfinance): prices, market cap, EPS, and S&P 500 monthly prices for momentum (unofficial).
 - **[Shiller CAPE spreadsheet](http://www.econ.yale.edu/~shiller/data/ie_data.xls)** (Yale): aggregate CAPE and low-coverage fallback.
 
 `--cape` and `--tips` together skip live CAPE/TIPS fetches.
@@ -140,6 +147,8 @@ The CI pipeline checks:
 - **Test**: Unit tests with pytest and coverage reporting
 
 ## References
+
+- Asness, C. S., Moskowitz, T. J., & Pedersen, L. H. (2013). "Value and Momentum Everywhere." _The Journal of Finance_, 68(3), 929-985.
 
 - Haghani, V., & White, J. (2018) "Measuring the Fabric of Felicity." Elm Wealth.
   - <https://elmwealth.com/measuring-the-fabric-of-felicity/>

@@ -24,10 +24,11 @@ from cape_allocator.models.inputs import CapeVariant, InvestorParams, MarketInpu
 # "Using the Merton Rule with γ=2 we get: k* = 62.5% = 5% / (2 * 20%²)"
 # Source: Haghani & White (2022), footnote 10.
 
+
 @pytest.fixture
 def haghani_white_params() -> InvestorParams:
     """Haghani & White (2022) reference parameters."""
-    return InvestorParams(gamma=2.0, sigma=0.20, min_equity=0.0, max_equity=1.0)
+    return InvestorParams(gamma=2.0, sigma=0.20, momentum_weight=0.0)
 
 
 @pytest.fixture
@@ -37,8 +38,8 @@ def haghani_white_market() -> MarketInputs:
     We use EY = 5.5% and TIPS = 0.5% so that EEY = 5.0%.
     """
     return MarketInputs(
-        cape_value=1.0 / 0.055,   # EY = 5.5%  → CAPE ≈ 18.18×
-        tips_yield=0.005,          # TIPS = 0.5%  → EEY = 5.0%
+        cape_value=1.0 / 0.055,  # EY = 5.5%  → CAPE ≈ 18.18×
+        tips_yield=0.005,  # TIPS = 0.5%  → EEY = 5.0%
         cape_variant=CapeVariant.AGGREGATE_10Y,
         as_of_date=date(2022, 1, 1),
     )
@@ -47,6 +48,7 @@ def haghani_white_market() -> MarketInputs:
 # ── Ma et al. (2026) Table A2 toy example ────────────────────────────────────
 # Five stocks A–E with known prices, earnings, and market caps.
 # The paper shows: Aggregate CAPE = 13.26, MV-weighted Component CAPE = 15.01.
+
 
 @pytest.fixture
 def ma_table_a2_prices() -> np.ndarray:
@@ -69,6 +71,7 @@ def ma_table_a2_market_caps() -> np.ndarray:
 # Component 10Y CAPE at end-2024 ≈ 56× (Ma et al. 2026, communicated to
 # Globe and Mail, March 2026).  TIPS yield approx 2.0%.
 
+
 @pytest.fixture
 def current_market_approx() -> MarketInputs:
     return MarketInputs(
@@ -83,10 +86,10 @@ def current_market_approx() -> MarketInputs:
 @pytest.fixture
 def standard_investor() -> InvestorParams:
     """Haghani & White (2022) default investor."""
-    return InvestorParams(gamma=2.0, sigma=0.18, min_equity=0.0, max_equity=1.0)
+    return InvestorParams(gamma=2.0, sigma=0.18, momentum_weight=0.0)
 
 
 @pytest.fixture
 def ma_investor() -> InvestorParams:
     """Ma et al. (2026) Table 8 investor (γ=5)."""
-    return InvestorParams(gamma=5.0, sigma=0.18, min_equity=0.0, max_equity=1.0)
+    return InvestorParams(gamma=5.0, sigma=0.18, momentum_weight=0.0)

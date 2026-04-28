@@ -391,3 +391,46 @@ def fetch_component_cape(window_years: int = 10) -> ComponentCapeResult:
         tickers_attempted=tickers_attempted,
         tickers_succeeded=tickers_succeeded,
     )
+
+
+def fetch_sp500_monthly_prices() -> pd.Series:
+    """
+    Fetch monthly closing prices for S&P 500 (^GSPC) from yfinance.
+
+    Used for computing the 12-month momentum signal.
+
+    Returns
+    -------
+    pd.Series
+        Monthly closing prices, indexed by date (end of month).
+        Series is sorted with most recent dates first.
+    """
+    cache_key = "sp500_monthly_prices"
+    cached = cache_get(cache_key)
+    if cached is not None:
+        logger.info("Yahoo Finance: using cached S&P 500 monthly prices")
+        return pd.Series(cached["prices"], index=pd.to_datetime(cached["dates"]))
+
+    logger.info("Yahoo Finance: fetching S&P 500 monthly prices…")
+
+    # Fetch 2 years of data to ensure we have enough for 12-month momentum
+    sp500 = yf.Ticker("^GSPC")
+    hist = sp500.history(period="2y", interval="1mo")
+
+    if hist.empty:
+        raise RuntimeError("Could not fetch S&P 500 price data from Yahoo Finance")
+
+    # Use the 'Close' column and sort with most recent first
+    prices = hist["Close"].sort_index(ascending=False)
+
+    # Cache the data
+    cache_set(
+        cache_key,
+        {
+            "prices": prices.tolist(),
+            "dates": prices.index.strftime("%Y-%m-%d").tolist(),
+        },
+    )
+
+    logger.info("Yahoo Finance: loaded %s months of S&P 500 prices", len(prices))
+    return prices
