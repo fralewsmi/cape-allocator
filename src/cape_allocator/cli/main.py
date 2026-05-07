@@ -368,7 +368,7 @@ def main() -> None:
     momentum_weight = _prompt_if_none(
         args.momentum_weight,
         "Momentum overlay weight (e.g. 0.5 for equal blend with Merton)",
-        default=0.0,
+        default=0.5,
         min_val=0.0,
         max_val=1.0,
     )
