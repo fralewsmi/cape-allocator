@@ -17,6 +17,9 @@ class AllocationRequest(BaseModel):
 
     gamma: float = Field(default=2.0, ge=0.5, le=20.0)
     sigma: float = Field(default=0.18, ge=0.05, le=0.60)
+    momentum_weight: float = Field(
+        default=0.0, ge=0.0, le=1.0
+    )  # Default to 0 for API (pure Merton)
 
     cape_variant: CapeVariant = Field(default=CapeVariant.COMPONENT_10Y)
 
@@ -41,6 +44,7 @@ class MarketInputsResponse(BaseModel):
     tips_yield: float
     cape_variant: CapeVariant
     constituent_coverage: float | None
+    eps_exclusion_rate: float | None
     as_of_date: str  # ISO format
     warnings: list[DataWarning]
 

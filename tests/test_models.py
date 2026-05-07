@@ -20,7 +20,7 @@ class TestInvestorParams:
         p = InvestorParams()
         assert p.gamma == 2.0
         assert p.sigma == 0.18
-        assert p.momentum_weight == 0.0
+        assert p.momentum_weight == 0.5
         assert p.cape_variant == CapeVariant.COMPONENT_10Y
 
     def test_valid_custom_params(self) -> None:

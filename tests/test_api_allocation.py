@@ -26,6 +26,7 @@ def test_post_allocation_manual() -> None:
             "cape_value": 1 / 0.055,  # EY = 5.5%
             "tips_yield": 0.005,  # EEY = 5.0%
             "cape_variant": "aggregate_10y",
+            "momentum_weight": 0.0,  # Pure Merton, no momentum blending
         },
     )
     assert response.status_code == 200

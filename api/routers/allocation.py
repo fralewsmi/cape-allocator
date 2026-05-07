@@ -21,6 +21,7 @@ async def post_allocation(request: AllocationRequest) -> AllocationResponse:
     investor = InvestorParams(
         gamma=request.gamma,
         sigma=request.sigma,
+        momentum_weight=request.momentum_weight,
         cape_variant=request.cape_variant,
     )
     result = fetch_market_inputs_and_allocate(investor)
@@ -39,6 +40,7 @@ async def post_allocation_manual(
     investor = InvestorParams(
         gamma=request.gamma,
         sigma=request.sigma,
+        momentum_weight=request.momentum_weight,
         cape_variant=request.cape_variant,
     )
     market = MarketInputs(

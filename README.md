@@ -30,17 +30,17 @@ _Chart created via Claude to visualise the model, not a live part of the allocat
 # Create and activate virtual environment (or use venv, conda, etc.)
 uv venv && source .venv/bin/activate
 
+# Install all development and API tools (recommended for development)
+uv sync --extra dev
+
 # Install dependencies (core only for basic usage)
 uv sync
 
-# Install all development and API tools
-uv sync --extras dev
-
 # Install with specific optional groups
-uv sync --extras test      # testing tools (pytest, pytest-cov, hypothesis)
-uv sync --extras lint      # linting tools (ruff)
-uv sync --extras type      # type checking (ty)
-uv sync --extras api       # API server (fastapi, mangum, uvicorn, httpx)
+uv sync --extra test      # testing tools (pytest, pytest-cov, hypothesis)
+uv sync --extra lint      # linting tools (ruff)
+uv sync --extra type      # type checking (ty)
+uv sync --extra api       # API server (fastapi, mangum, uvicorn, httpx)
 
 # Copy environment file
 cp .env.example .env   # add your FRED API key
@@ -183,6 +183,9 @@ Install any combination: `pip install -e ".[test,lint,type]"` or just `pip insta
 This project uses [ty](https://docs.astral.sh/ty/) for type checking.
 
 ```bash
+# Install type checking dependencies
+uv sync --extra type
+
 # Run type checks
 ty check
 
@@ -195,6 +198,9 @@ ty check --config pyproject.toml
 This project uses [Ruff](https://docs.astral.sh/ruff/) for code linting and formatting.
 
 ```bash
+# Install linting dependencies
+uv sync --extra lint
+
 # Check for linting issues
 ruff check .
 
@@ -210,6 +216,9 @@ ruff format .
 Run the test suite using pytest:
 
 ```bash
+# Install test dependencies
+uv sync --extra test
+
 # Run all tests
 pytest
 
