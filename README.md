@@ -256,5 +256,5 @@ The CI pipeline checks:
 - Li, K., Li, Y., Lyu, C., & Yu, J. (2025). "How to Dominate the Historical Average." _Review of Financial Studies_.
   - <https://academic.oup.com/rfs/article/38/10/3086/8010588>
 
-- Ma, Q., Marshall, A., Nguyen, T. H., & Visaltanachoti, N. (2026). Component CAPE research.
+- Ma, Q., Marshall, A., Nguyen, T. H., & Visaltanachoti, N. (2026). "CAPE Ratios and Long-Term Returns."
   - <https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6060895>
