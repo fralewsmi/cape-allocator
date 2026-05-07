@@ -31,16 +31,16 @@ _Chart created via Claude to visualise the model, not a live part of the allocat
 uv venv && source .venv/bin/activate
 
 # Install dependencies (core only for basic usage)
-uv pip install -e "."
-
-# Install with specific optional groups
-uv pip install -e ".[test]"       # testing tools (pytest, pytest-cov, hypothesis)
-uv pip install -e ".[lint]"       # linting tools (ruff)
-uv pip install -e ".[type]"       # type checking (ty)
-uv pip install -e ".[api]"        # API server (fastapi, mangum, uvicorn, httpx)
+uv sync
 
 # Install all development and API tools
-uv pip install -e ".[dev]"
+uv sync --extras dev
+
+# Install with specific optional groups
+uv sync --extras test      # testing tools (pytest, pytest-cov, hypothesis)
+uv sync --extras lint      # linting tools (ruff)
+uv sync --extras type      # type checking (ty)
+uv sync --extras api       # API server (fastapi, mangum, uvicorn, httpx)
 
 # Copy environment file
 cp .env.example .env   # add your FRED API key

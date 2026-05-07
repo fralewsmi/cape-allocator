@@ -17,6 +17,7 @@ dependencies = [
     "rich>=13.0",
     "yfinance>=0.2",
     "pydantic>=2.0",
+    "lxml>=4.9",
 ]
 
 [project.optional-dependencies]
@@ -38,6 +39,7 @@ api = [
     "httpx>=0.25",
 ]
 dev = [
+    "uv",
     "cape-allocator[test,lint,type,api]",
 ]
 
