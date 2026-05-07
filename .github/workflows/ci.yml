@@ -21,7 +21,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install uv
-          uv sync --extras lint
+          uv sync --extra lint
 
       - name: Lint with ruff
         run: ruff check .
@@ -40,7 +40,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install uv
-          uv sync --extras type
+          uv sync --extra type
 
       - name: Type check with ty
         run: ty check
@@ -59,7 +59,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install uv
-          uv sync --extras test,api
+          uv sync --extra test,api
 
       - name: Run tests
         run: pytest
