@@ -32,6 +32,7 @@ async def get_market_inputs(
         tips_yield=market_inputs.tips_yield,
         cape_variant=market_inputs.cape_variant,
         constituent_coverage=market_inputs.constituent_coverage,
+        eps_exclusion_rate=market_inputs.eps_exclusion_rate,
         as_of_date=market_inputs.as_of_date.isoformat(),
         warnings=warnings,
     )

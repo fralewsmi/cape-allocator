@@ -34,10 +34,12 @@ from .momentum import (
 
 _LOW_COVERAGE_THRESHOLD = 0.80
 _HIGH_CAPE_DEVIATION_WARN_PCT = 50.0  # Warn if CAPE > 150% of historical mean
+_EPS_EXCLUSION_WARN_THRESHOLD = 0.10  # Warn if >10% of EPS years excluded
 _NEGATIVE_EEY_CODE = "NEGATIVE_EXCESS_EARNINGS_YIELD"
 _LOW_COVERAGE_CODE = "LOW_CONSTITUENT_COVERAGE"
 _FALLBACK_CODE = "SHILLER_FALLBACK_USED"
 _BLENDED_CODE = "ALLOCATION_BLENDED"
+_CAPE_UNDERSTATED_CODE = "CAPE_POTENTIALLY_UNDERSTATED"
 _HIGH_CAPE_CODE = "CAPE_SIGNIFICANTLY_ABOVE_MEAN"
 
 logger = logging.getLogger(__name__)
@@ -219,6 +221,7 @@ def fetch_market_inputs_and_allocate(investor: InvestorParams) -> AllocationResu
     variant = investor.cape_variant
     warnings_pre: list[DataWarning] = []
     constituent_coverage: float | None = None
+    eps_exclusion_rate: float | None = None
 
     logger.info(
         "Market data: fetching 10-year TIPS (FRED) in parallel with CAPE inputs…"
@@ -241,6 +244,22 @@ def fetch_market_inputs_and_allocate(investor: InvestorParams) -> AllocationResu
                 )
                 component_result = fetch_component_cape(window_years=window)
                 constituent_coverage = component_result.coverage
+                eps_exclusion_rate = component_result.eps_exclusion_rate
+
+                # Check for EPS data quality issues
+                if eps_exclusion_rate > _EPS_EXCLUSION_WARN_THRESHOLD:
+                    warnings_pre.append(
+                        DataWarning(
+                            severity=WarningSeverity.WARN,
+                            code=_CAPE_UNDERSTATED_CODE,
+                            message=(
+                                f"{eps_exclusion_rate:.0%} of EPS years"
+                                "were excluded due to non-positive values. "
+                                "Component CAPE may be understated due to data quality "
+                                "limitations (yfinance earnings history is patchy)."
+                            ),
+                        )
+                    )
 
                 if component_result.coverage >= _LOW_COVERAGE_THRESHOLD:
                     cape_value = component_result.cape
@@ -301,6 +320,7 @@ def fetch_market_inputs_and_allocate(investor: InvestorParams) -> AllocationResu
         tips_yield=tips_yield,
         cape_variant=variant,
         constituent_coverage=constituent_coverage,
+        eps_exclusion_rate=eps_exclusion_rate,
         momentum_signal=momentum_signal,
         as_of_date=date.today(),
     )

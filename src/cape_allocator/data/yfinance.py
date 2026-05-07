@@ -83,6 +83,9 @@ class ConstituentResult:
     weight: float = 0.0  # Populated after total market cap is known
     years_of_data: int = 0
     used_ttm_only: bool = False  # True if only one year of EPS was available
+    eps_excluded_count: int = (
+        0  # Number of EPS years excluded due to non-positive values
+    )
 
 
 @dataclass
@@ -94,6 +97,9 @@ class ComponentCapeResult:
     constituent_results: list[ConstituentResult] = field(default_factory=list)
     tickers_attempted: int = 0
     tickers_succeeded: int = 0
+    eps_exclusion_rate: float = (
+        0.0  # Fraction of EPS years excluded due to non-positive values
+    )
 
 
 def fetch_sp500_tickers() -> list[str]:
@@ -250,6 +256,7 @@ def _compute_constituent_cape(
         # (Ma et al. winsorise but do not exclude; we exclude to avoid
         # negative or zero denominators with patchy free data)
         positive_eps = [e for e in real_eps if e > 0]
+        eps_excluded_count = len(real_eps) - len(positive_eps)
         if not positive_eps:
             return None
 
@@ -268,6 +275,7 @@ def _compute_constituent_cape(
             market_cap=market_cap,
             years_of_data=years_available,
             used_ttm_only=used_ttm,
+            eps_excluded_count=eps_excluded_count,
         )
 
     except Exception:  # noqa: BLE001
@@ -310,6 +318,7 @@ def fetch_component_cape(window_years: int = 10) -> ComponentCapeResult:
             coverage=cached["coverage"],
             tickers_attempted=cached["tickers_attempted"],
             tickers_succeeded=cached["tickers_succeeded"],
+            eps_exclusion_rate=cached.get("eps_exclusion_rate", 0.0),
         )
 
     logger.info(
@@ -368,6 +377,13 @@ def fetch_component_cape(window_years: int = 10) -> ComponentCapeResult:
     component_cape = float(sum(r.weight * r.cape for r in results))
     coverage = tickers_succeeded / tickers_attempted
 
+    # Calculate EPS exclusion rate for data quality warning
+    total_eps_years = sum(r.years_of_data for r in results)
+    total_eps_excluded = sum(r.eps_excluded_count for r in results)
+    eps_exclusion_rate = (
+        total_eps_excluded / total_eps_years if total_eps_years > 0 else 0.0
+    )
+
     cache_set(
         cache_key,
         {
@@ -375,6 +391,7 @@ def fetch_component_cape(window_years: int = 10) -> ComponentCapeResult:
             "coverage": coverage,
             "tickers_attempted": tickers_attempted,
             "tickers_succeeded": tickers_succeeded,
+            "eps_exclusion_rate": eps_exclusion_rate,
         },
     )
 
@@ -390,6 +407,7 @@ def fetch_component_cape(window_years: int = 10) -> ComponentCapeResult:
         constituent_results=results,
         tickers_attempted=tickers_attempted,
         tickers_succeeded=tickers_succeeded,
+        eps_exclusion_rate=eps_exclusion_rate,
     )
 
 

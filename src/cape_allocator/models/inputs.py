@@ -150,6 +150,16 @@ class MarketInputs(BaseModel):
             "None if using aggregate data. Below 0.80 triggers fallback."
         ),
     )
+    eps_exclusion_rate: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Fraction of EPS years excluded due to non-positive values (0–1). "
+            "None if using aggregate data."
+            "High values indicate potential CAPE understatement."
+        ),
+    )
     momentum_signal: float | None = Field(
         default=None,
         description=(

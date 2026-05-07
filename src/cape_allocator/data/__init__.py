@@ -17,7 +17,9 @@ from .shiller import fetch_aggregate_cape
 from .yfinance import fetch_component_cape
 
 _LOW_COVERAGE_THRESHOLD = 0.80
+_EPS_EXCLUSION_WARN_THRESHOLD = 0.10  # Warn if >10% of EPS years excluded
 _FALLBACK_CODE = "SHILLER_FALLBACK_USED"
+_CAPE_UNDERSTATED_CODE = "CAPE_POTENTIALLY_UNDERSTATED"
 
 
 def fetch_market_inputs(
@@ -36,6 +38,7 @@ def fetch_market_inputs(
         Any warnings from the fetch process.
     """
     warnings: list[DataWarning] = []
+    eps_exclusion_rate: float | None = None
 
     with ThreadPoolExecutor(max_workers=2) as pool:
         tips_future = pool.submit(fetch_tips_yield)
@@ -48,6 +51,22 @@ def fetch_market_inputs(
             window = EARNINGS_WINDOW_YEARS[cape_variant]
             component_result = fetch_component_cape(window_years=window)
             constituent_coverage = component_result.coverage
+            eps_exclusion_rate = component_result.eps_exclusion_rate
+
+            # Check for EPS data quality issues
+            if component_result.eps_exclusion_rate > _EPS_EXCLUSION_WARN_THRESHOLD:
+                warnings.append(
+                    DataWarning(
+                        severity=WarningSeverity.WARN,
+                        code=_CAPE_UNDERSTATED_CODE,
+                        message=(
+                            f"{component_result.eps_exclusion_rate:.0%} of EPS years "
+                            "were excluded due to non-positive values. "
+                            "Component CAPE may be understated due to data quality "
+                            "limitations (yfinance earnings history is patchy)."
+                        ),
+                    )
+                )
 
             if component_result.coverage >= _LOW_COVERAGE_THRESHOLD:
                 cape_value = component_result.cape
@@ -68,6 +87,7 @@ def fetch_market_inputs(
                 )
                 cape_variant = CapeVariant.AGGREGATE_10Y
                 constituent_coverage = None
+                eps_exclusion_rate = None
         else:
             # Aggregate CAPE
             cape_value, _ = fetch_aggregate_cape()
@@ -80,5 +100,6 @@ def fetch_market_inputs(
         tips_yield=tips_yield,
         cape_variant=cape_variant,
         constituent_coverage=constituent_coverage,
+        eps_exclusion_rate=eps_exclusion_rate,
         as_of_date=date.today(),
     ), warnings
