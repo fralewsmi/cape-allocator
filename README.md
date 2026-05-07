@@ -233,6 +233,10 @@ The CI pipeline checks:
 ## References
 
 - Asness, C. S., Moskowitz, T. J., & Pedersen, L. H. (2013). "Value and Momentum Everywhere." _The Journal of Finance_, 68(3), 929-985.
+  - <https://doi.org/10.1111/jofi.12021>
+
+- Asness, C.S., Ilmanen, A., & Maloney, T. (2017). "MARKET TIMING : SIN A LITTLE RESOLVING THE VALUATION TIMING PUZZLE.". AQR
+  - <https://www.aqr.com/-/media/AQR/Documents/Insights/White-Papers/Market-Timing-Sin-a-Little.pdf>
 
 - Haghani, V., & White, J. (2018) "Measuring the Fabric of Felicity." Elm Wealth.
   - <https://elmwealth.com/measuring-the-fabric-of-felicity/>
