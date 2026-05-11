@@ -1,7 +1,6 @@
 # Component CAPE + Merton Rule Portfolio Allocator
 
 [![CI](https://github.com/fralewsmi/cape-allocator/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/fralewsmi/cape-allocator/actions/workflows/ci.yml?query=branch%3Amain)
-[![Deploy](https://github.com/fralewsmi/cape-allocator/actions/workflows/ci.yml/badge.svg?branch=main&job=Deploy%20Lambda&label=deploy)](https://github.com/fralewsmi/cape-allocator/actions/workflows/ci.yml?query=branch%3Amain)
 
 I became interested in optimal equity allocation after reading Shiller's Irrational Exuberance and tracking his CAPE ratio during the high equity valuations in 2025 with the AI bubble and global tariffs.
 
