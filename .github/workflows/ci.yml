@@ -5,6 +5,19 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "Serverless stage to deploy"
+        required: false
+        default: "dev"
+      region:
+        description: "AWS region to deploy"
+        required: false
+        default: "ap-southeast-2"
+
+permissions:
+  contents: read
 
 jobs:
   lint:
@@ -69,3 +82,43 @@ jobs:
         with:
           files: ./coverage.xml
           fail_ci_if_error: false
+
+  deploy:
+    name: Deploy Lambda
+    runs-on: ubuntu-latest
+    needs: [lint, type-check, test]
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      id-token: write
+    environment: ${{ github.event.inputs.stage || vars.SERVERLESS_STAGE || 'dev' }}
+    env:
+      AWS_REGION: ${{ github.event.inputs.region || vars.AWS_REGION || 'ap-southeast-2' }}
+      SERVERLESS_STAGE: ${{ github.event.inputs.stage || vars.SERVERLESS_STAGE || 'dev' }}
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+      CORS_ORIGINS: ${{ vars.CORS_ORIGINS || 'https://cape-allocator-ui.lewissmith-fraser.workers.dev' }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install Serverless tooling
+        run: npm ci
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy with Serverless
+        run: npm run deploy -- --stage "$SERVERLESS_STAGE" --region "$AWS_REGION"

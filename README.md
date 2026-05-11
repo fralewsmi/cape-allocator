@@ -65,14 +65,28 @@ docker run -p 8000:8000 -e FRED_API_KEY=... cape-allocator
 
 ### AWS Lambda Deployment
 
-```bash
-# Install SAM CLI
-pip install aws-sam-cli
+This API is Lambda-ready via the `Mangum` handler in `api/main.py` and the
+Serverless Framework config in `serverless.yml`. Deployment is handled by
+GitHub Actions.
 
-# Deploy to AWS
-sam build
-sam deploy --guided
-```
+Pushes to `main` deploy the Lambda after linting, type checking, and tests pass.
+You can also trigger a manual deploy from the GitHub Actions UI with a custom
+stage or region.
+
+Required GitHub repository secret:
+
+- `AWS_ROLE_TO_ASSUME`: IAM role ARN trusted by GitHub OIDC for this repository
+- `FRED_API_KEY`: FRED API key passed to the Lambda environment
+
+Optional GitHub repository variables:
+
+- `AWS_REGION`: defaults to `ap-southeast-2`
+- `SERVERLESS_STAGE`: defaults to `dev`
+- `CORS_ORIGINS`: defaults to `https://cape-allocator-ui.lewissmith-fraser.workers.dev`
+
+The AWS role needs permission to deploy the Serverless stack and its Lambda/API
+Gateway resources. Prefer GitHub OIDC over static AWS access keys so CI does not
+store long-lived credentials.
 
 ## Usage
 
@@ -228,16 +242,20 @@ pytest --cov=cape_allocator --cov-report=html
 
 ### Continuous Integration
 
-This project uses GitHub Actions for automated testing, linting, and type checking. Workflows are defined in `.github/workflows/ci.yml` and run on:
+This project uses GitHub Actions for automated testing, linting, type checking,
+and deployment. Workflows are defined in `.github/workflows/ci.yml` and run on:
 
 - Push to `main` branch
 - Pull requests to `main` branch
+- Manual workflow dispatch
 
 The CI pipeline checks:
 
 - **Lint**: Code style and quality with Ruff
 - **Type Check**: Type safety with ty
 - **Test**: Unit tests with pytest and coverage reporting
+- **Deploy**: AWS Lambda deployment with Serverless Framework after checks pass
+  on `main` or manual dispatch
 
 ## References
 
