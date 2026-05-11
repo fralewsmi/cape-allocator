@@ -19,12 +19,6 @@ where:
 - $\gamma$ = risk aversion
 - $\sigma$ = equity volatility
 
-## Model Visualisation
-
-![CAPE implied equity allocation by risk aversion](./CAPE-implied_equity_allocation_by_risk_aversion.png)
-
-_Chart created via Claude to visualise the model, not a live part of the allocator output._
-
 ## Installation
 
 ### Core Library
