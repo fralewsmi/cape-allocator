@@ -12,6 +12,7 @@ provider:
     CORS_ORIGINS: ${env:CORS_ORIGINS, "*"}
     CAPE_CACHE_DIR: /tmp/cape_allocator
     CAPE_CACHE_TTL_HOURS: 24
+    PYTHONPATH: /var/task/src
 
 functions:
   api:
@@ -35,8 +36,8 @@ package:
     - "api/**"
     - "src/**"
     - "pyproject.toml"
-    - "requirements.txt"
 
 custom:
   pythonRequirements:
     dockerizePip: true
+    fileName: .serverless-requirements.txt

@@ -2,7 +2,9 @@
   "name": "cape-allocator-api",
   "private": true,
   "scripts": {
+    "predeploy": "python3 scripts/export_lambda_requirements.py",
     "deploy": "serverless deploy",
+    "prepackage": "python3 scripts/export_lambda_requirements.py",
     "package": "serverless package"
   },
   "devDependencies": {

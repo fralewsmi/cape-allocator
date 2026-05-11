@@ -9,6 +9,7 @@ build/
 dist/
 *.egg-info/
 node_modules/
+.serverless-requirements.txt
 
 # Testing
 .coverage
