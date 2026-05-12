@@ -19,11 +19,6 @@ def get_fred_api_key() -> str:
     return key
 
 
-def get_cache_dir() -> str:
-    """Get cache directory from environment, default to ~/.cache/cape_allocator."""
-    return getenv("CAPE_CACHE_DIR", "~/.cache/cape_allocator")
-
-
 def get_cache_ttl_hours() -> float:
     """Get cache TTL hours from environment, default to 24."""
     try:
@@ -32,7 +27,5 @@ def get_cache_ttl_hours() -> float:
         return 24.0
 
 
-# Annotated dependencies
 FredApiKey = Annotated[str, Depends(get_fred_api_key)]
-CacheDir = Annotated[str, Depends(get_cache_dir)]
 CacheTtlHours = Annotated[float, Depends(get_cache_ttl_hours)]

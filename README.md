@@ -71,7 +71,18 @@ Pushes to `main` deploy the Lambda after linting, type checking, and tests pass.
 You can also trigger a manual deploy from the GitHub Actions UI with a custom
 stage or region.
 
-Required GitHub repository secret:
+The stack provisions two Lambda functions:
+
+- **`api`** — the FastAPI handler, invoked by API Gateway on every request
+- **`warmer`** — a scheduled function (every 12 hours) that pre-populates the S3
+  cache so the `api` function never has to do a cold data fetch during a user request
+
+An S3 bucket for the shared cache is created automatically by the stack
+(`cape-allocator-cache-<stage>-<account-id>`). Both functions share it via the
+`CAPE_CACHE_URL` environment variable (`s3://bucket-name`), which is wired up
+by the Serverless Framework.
+
+Required GitHub repository secrets:
 
 - `AWS_ROLE_TO_ASSUME`: IAM role ARN trusted by GitHub OIDC for this repository
 - `FRED_API_KEY`: FRED API key passed to the Lambda environment
@@ -166,7 +177,11 @@ Use `--momentum-weight 0.5` for equal blending (Asness et al. recommendation). W
 
 ## Data sources
 
-Responses are cached under `CAPE_CACHE_DIR` (default `~/.cache/cape_allocator`).
+Responses are cached to avoid redundant upstream fetches. The cache backend is
+selected automatically:
+
+- **Local / Docker**: JSON files under `CAPE_CACHE_URL` (default `~/.cache/cape_allocator`)
+- **Lambda**: S3 bucket provisioned by the stack, shared across all function instances (`CAPE_CACHE_URL=s3://bucket-name`)
 
 - **FRED** ([API key](https://fred.stlouisfed.org/docs/api/api_key.html) in `.env`): TIPS `DFII10` / `WFII10`, CPI `CPIAUCSL`.
 - **[Wikipedia](https://en.wikipedia.org/wiki/List_of_S%26P_500_companies)**: S&P 500 tickers.

@@ -2,13 +2,12 @@ from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
 
-from api.dependencies import get_cache_dir, get_cache_ttl_hours, get_fred_api_key
+from api.dependencies import get_cache_ttl_hours, get_fred_api_key
 from api.main import app
 
 client = TestClient(app)
 
 app.dependency_overrides[get_fred_api_key] = lambda: "test-key"
-app.dependency_overrides[get_cache_dir] = lambda: "/tmp/cache"
 app.dependency_overrides[get_cache_ttl_hours] = lambda: 24.0
 
 

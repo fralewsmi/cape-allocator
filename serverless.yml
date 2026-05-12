@@ -10,13 +10,26 @@ provider:
   environment:
     FRED_API_KEY: ${env:FRED_API_KEY}
     CORS_ORIGINS: ${env:CORS_ORIGINS, "*"}
-    CAPE_CACHE_DIR: /tmp/cape_allocator
+    CAPE_CACHE_URL: s3://cape-allocator-cache-${self:provider.stage}-${aws:accountId}
     CAPE_CACHE_TTL_HOURS: 24
     PYTHONPATH: /var/task/src
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+            - s3:PutObject
+            - s3:DeleteObject
+            - s3:ListBucket
+          Resource:
+            - !GetAtt Cachebucket.Arn
+            - !Sub "${Cachebucket.Arn}/*"
 
 functions:
   api:
     handler: api.main.handler
+    timeout: 30
     events:
       - http:
           path: /
@@ -26,6 +39,14 @@ functions:
           path: /{proxy+}
           method: ANY
           cors: true
+
+  warmer:
+    handler: api.warmer.handler
+    timeout: 900  # 15 min — component CAPE fetch across 500 tickers takes a while
+    events:
+      - schedule:
+          rate: ${self:custom.warmerSchedule}
+          enabled: true
 
 plugins:
   - serverless-python-requirements
@@ -41,3 +62,21 @@ custom:
   pythonRequirements:
     dockerizePip: true
     fileName: .serverless-requirements.txt
+  warmerSchedule: ${env:WARMER_SCHEDULE, "rate(12 hours)"}
+
+resources:
+  Resources:
+    Cachebucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: !Sub "cape-allocator-cache-${self:provider.stage}-${AWS::AccountId}"
+        LifecycleConfiguration:
+          Rules:
+            - Id: ExpireOldCache
+              Status: Enabled
+              ExpirationInDays: 2
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true

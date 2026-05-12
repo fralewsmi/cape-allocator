@@ -25,6 +25,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+try:
+    import yfinance as yf
+
+    yf.set_tz_cache_location("/tmp/yfinance")
+except Exception:
+    pass
+
 cors_origins = getenv("CORS_ORIGINS", "*").split(",")
 
 
