@@ -2,32 +2,39 @@
 FastAPI application for cape-allocator.
 """
 
+import logging
+import sys
 from contextlib import asynccontextmanager
 from os import getenv
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from mangum import Mangum
 
 from .routers import allocation, health, market, sensitivity
 
-# Load environment variables
 load_dotenv()
 
-# CORS origins
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    stream=sys.stdout,
+    force=True,
+)
+logger = logging.getLogger(__name__)
+
 cors_origins = getenv("CORS_ORIGINS", "*").split(",")
 
 
-# Lifespan for startup/shutdown
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    logger.info("Cape Allocator API starting up")
     yield
-    # Shutdown
+    logger.info("Cape Allocator API shutting down")
 
 
-# Create FastAPI app
 app = FastAPI(
     title="Cape Allocator API",
     description="Optimal equity/TIPS allocation using Component CAPE and Merton Rule",
@@ -35,20 +42,26 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers
 app.include_router(health.router)
 app.include_router(market.router)
 app.include_router(allocation.router)
 app.include_router(sensitivity.router)
 
-# Mangum handler for Lambda
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.exception("Unhandled exception on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
+
 handler = Mangum(app, lifespan="off")
