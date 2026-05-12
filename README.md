@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/fralewsmi/cape-allocator/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/fralewsmi/cape-allocator/actions/workflows/ci.yml?query=branch%3Amain)
 
+Backend for the Component CAPE + Merton Rule Portfolio Allocator [fralewsmi/cape-allocator-ui](https://github.com/fralewsmi/cape-allocator-ui)
+
 I became interested in optimal equity allocation after reading Shiller's Irrational Exuberance and tracking his CAPE ratio during the high equity valuations in 2025 with the AI bubble and global tariffs.
 
 [This FTAV article](https://www.ft.com/content/84b8a579-8634-47de-a421-a1eb39c8577d) by Toby Nangle pointed me to Ma, Marshall, Nguyen & Visaltanachoti (2026), who proposed the component CAPE as a new model that provides higher accuracy for returns prediction.
