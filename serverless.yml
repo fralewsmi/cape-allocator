@@ -11,7 +11,7 @@ provider:
     FRED_API_KEY: ${env:FRED_API_KEY}
     CORS_ORIGINS: ${env:CORS_ORIGINS, "*"}
     CAPE_CACHE_URL: s3://cape-allocator-cache-${self:provider.stage}-${aws:accountId}
-    CAPE_CACHE_TTL_HOURS: 24
+    CAPE_CACHE_TTL_HOURS: 25
     PYTHONPATH: /var/task/src
   iam:
     role:
@@ -62,7 +62,7 @@ custom:
   pythonRequirements:
     dockerizePip: true
     fileName: .serverless-requirements.txt
-  warmerSchedule: ${env:WARMER_SCHEDULE, "rate(12 hours)"}
+  warmerSchedule: ${env:WARMER_SCHEDULE, "cron(0 0 * * ? *)"}
 
 resources:
   Resources:

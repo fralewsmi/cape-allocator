@@ -90,7 +90,6 @@ def fetch_cpi_index() -> pd.Series:
 
     series = pd.Series(values, index=pd.DatetimeIndex(dates), name="CPIAUCSL")
     series = series.sort_index()
-    logger.info("FRED CPI: loaded %s monthly CPIAUCSL points", len(series))
 
     cache_set(
         _CACHE_KEY,

@@ -322,9 +322,8 @@ def fetch_component_cape(window_years: int = 10) -> ComponentCapeResult:
         )
 
     logger.info(
-        "Yahoo Finance: building component CAPE — CPI + tickers (parallel), "
-        "then %s workers for quotes…",
-        _CONSTITUENT_FETCH_WORKERS,
+        "Yahoo Finance: building component CAPE (%s-year window)…",
+        window_years,
     )
 
     with ThreadPoolExecutor(max_workers=2) as _io_pool:
@@ -333,13 +332,7 @@ def fetch_component_cape(window_years: int = 10) -> ComponentCapeResult:
         cpi_index = cpi_future.result()
         tickers = tickers_future.result()
 
-    logger.info(
-        "Yahoo Finance: fetching price, market cap, and EPS for %s tickers…",
-        len(tickers),
-    )
-
     results: list[ConstituentResult] = []
-    total = len(tickers)
     done = 0
     with ThreadPoolExecutor(max_workers=_CONSTITUENT_FETCH_WORKERS) as pool:
         futures = [
@@ -355,8 +348,6 @@ def fetch_component_cape(window_years: int = 10) -> ComponentCapeResult:
                 if result is not None:
                     results.append(result)
             done += 1
-            if done % 50 == 0 or done == total:
-                logger.info("Yahoo Finance: progress %s/%s tickers", done, total)
 
     tickers_attempted = len(tickers)
     tickers_succeeded = len(results)
@@ -450,5 +441,4 @@ def fetch_sp500_monthly_prices() -> pd.Series:
         },
     )
 
-    logger.info("Yahoo Finance: loaded %s months of S&P 500 prices", len(prices))
     return prices
