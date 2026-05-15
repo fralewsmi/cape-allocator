@@ -80,3 +80,98 @@ resources:
           BlockPublicPolicy: true
           IgnorePublicAcls: true
           RestrictPublicBuckets: true
+
+    # SNS topic — subscribe your email after first deploy:
+    #   aws sns subscribe \
+    #     --topic-arn <AlarmTopicArn from stack outputs> \
+    #     --protocol email \
+    #     --notification-endpoint you@example.com
+    AlarmTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: cape-allocator-alarms-${self:provider.stage}
+
+    # Warmer errors — most critical: stale cache means slow/broken API requests
+    WarmerErrorsAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: cape-allocator-${self:provider.stage}-warmer-errors
+        AlarmDescription: Cache warmer Lambda failed — cache may go stale
+        Namespace: AWS/Lambda
+        MetricName: Errors
+        Dimensions:
+          - Name: FunctionName
+            Value: !Ref WarmerLambdaFunction
+        Statistic: Sum
+        Period: 3600       # 1 hour — warmer runs every 12h so no need to be tighter
+        EvaluationPeriods: 1
+        Threshold: 0
+        ComparisonOperator: GreaterThanThreshold
+        TreatMissingData: notBreaching
+        AlarmActions:
+          - !Ref AlarmTopic
+
+    # API errors — unhandled exceptions reaching the Lambda error metric
+    ApiErrorsAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: cape-allocator-${self:provider.stage}-api-errors
+        AlarmDescription: API Lambda is returning unhandled errors
+        Namespace: AWS/Lambda
+        MetricName: Errors
+        Dimensions:
+          - Name: FunctionName
+            Value: !Ref ApiLambdaFunction
+        Statistic: Sum
+        Period: 300        # 5 minutes
+        EvaluationPeriods: 1
+        Threshold: 0
+        ComparisonOperator: GreaterThanThreshold
+        TreatMissingData: notBreaching
+        AlarmActions:
+          - !Ref AlarmTopic
+
+    # API duration — p95 over 20s means requests are hitting a cold cache
+    ApiDurationAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: cape-allocator-${self:provider.stage}-api-duration
+        AlarmDescription: API p95 duration exceeds 20s — likely serving uncached data
+        Namespace: AWS/Lambda
+        MetricName: Duration
+        Dimensions:
+          - Name: FunctionName
+            Value: !Ref ApiLambdaFunction
+        ExtendedStatistic: p95
+        Period: 300
+        EvaluationPeriods: 2
+        Threshold: 20000   # milliseconds
+        ComparisonOperator: GreaterThanThreshold
+        TreatMissingData: notBreaching
+        AlarmActions:
+          - !Ref AlarmTopic
+
+    # API throttles — Lambda concurrency limit hit, requests silently dropped
+    ApiThrottlesAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: cape-allocator-${self:provider.stage}-api-throttles
+        AlarmDescription: API Lambda is being throttled — concurrent execution limit reached
+        Namespace: AWS/Lambda
+        MetricName: Throttles
+        Dimensions:
+          - Name: FunctionName
+            Value: !Ref ApiLambdaFunction
+        Statistic: Sum
+        Period: 300
+        EvaluationPeriods: 1
+        Threshold: 0
+        ComparisonOperator: GreaterThanThreshold
+        TreatMissingData: notBreaching
+        AlarmActions:
+          - !Ref AlarmTopic
+
+  Outputs:
+    AlarmTopicArn:
+      Description: SNS topic ARN for alarm notifications — subscribe your email after deploy
+      Value: !Ref AlarmTopic
