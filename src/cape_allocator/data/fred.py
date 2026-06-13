@@ -84,7 +84,7 @@ def _fetch_fred_series(
     observation_start: str | None = None,
     observation_end: str | None = None,
     offset: int = 0,
-) -> list[dict]:
+) -> list[dict[str, str]]:
     """Return raw FRED observations as a list of dicts (``date``, ``value``, …)."""
     params: dict[str, str | int] = {
         "series_id": series_id,

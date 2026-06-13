@@ -144,7 +144,7 @@ def _real_eps_series(
     cpi_index: pd.Series,
     window_years: int,
     *,
-    info: dict | None = None,
+    info: dict[str, object] | None = None,
 ) -> tuple[list[float], int, bool]:
     """
     Build a list of real (CPI-adjusted) annual EPS values for one ticker.
@@ -162,7 +162,10 @@ def _real_eps_series(
         True if the income statement was unavailable and TTM EPS was used.
     """
     info = info if info is not None else (ticker_obj.info or {})
-    ttm_eps: float | None = info.get("trailingEps")
+    raw_ttm_eps = info.get("trailingEps")
+    ttm_eps: float | None = (
+        float(raw_ttm_eps) if isinstance(raw_ttm_eps, (int, float)) else None
+    )
 
     # Attempt to read annual income statement
     try:
