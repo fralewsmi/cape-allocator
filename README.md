@@ -74,7 +74,7 @@ stage or region.
 The stack provisions two Lambda functions:
 
 - **`api`** — the FastAPI handler, invoked by API Gateway on every request
-- **`warmer`** — a scheduled function (every 12 hours) that pre-populates the S3
+- **`warmer`** — a scheduled function (4am and 4pm UTC) that pre-populates the S3
   cache so the `api` function never has to do a cold data fetch during a user request
 
 An S3 bucket for the shared cache is created automatically by the stack
@@ -218,6 +218,18 @@ ty check
 
 # Run with specific configuration
 ty check --config pyproject.toml
+```
+
+### Pre-commit hooks
+
+The project uses [pre-commit](https://pre-commit.com/) to run ruff, ruff-format, and pytest before each commit.
+
+```bash
+# Install hooks (first time only, pre-commit is included in dev deps)
+pre-commit install
+
+# Run hooks manually against all files
+pre-commit run --all-files
 ```
 
 ### Linting

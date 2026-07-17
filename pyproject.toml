@@ -42,6 +42,7 @@ api = [
 ]
 dev = [
     "uv",
+    "pre-commit",
     "cape-allocator[test,lint,type,api]",
 ]
 
