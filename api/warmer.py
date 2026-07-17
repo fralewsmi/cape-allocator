@@ -21,6 +21,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+try:
+    import yfinance as yf
+
+    yf.set_tz_cache_location("/tmp/yfinance")
+except Exception:
+    pass
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s %(message)s",

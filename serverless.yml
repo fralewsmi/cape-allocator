@@ -29,7 +29,7 @@ provider:
 functions:
   api:
     handler: api.main.handler
-    timeout: 30
+    timeout: 60
     events:
       - http:
           path: /
@@ -62,7 +62,7 @@ custom:
   pythonRequirements:
     dockerizePip: true
     fileName: .serverless-requirements.txt
-  warmerSchedule: ${env:WARMER_SCHEDULE, "cron(0 6 * * ? *)"}
+  warmerSchedule: ${env:WARMER_SCHEDULE, "cron(0 4,16 * * ? *)"}
 
 resources:
   Resources:
