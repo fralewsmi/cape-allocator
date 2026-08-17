@@ -3,16 +3,16 @@ Cache for market data fetches.
 
 Backend is selected from the ``CAPE_CACHE_URL`` environment variable:
 
-- ``s3://bucket-name``          → S3 backend (production)
-- ``/path/to/dir`` or ``~/…``   → file backend (local dev)
-- unset                         → file backend at ``~/.cache/cape_allocator``
+- ``s3://bucket-name``         → S3 backend (production)
+- ``/path/to/dir`` or ``~/…``  → file backend (local dev)
+- unset                        → file backend at ``~/.cache/cape_allocator``
 
-Adding a new backend: implement the ``CacheBackend`` protocol and add a
+To add a new backend: implement the ``CacheBackend`` protocol and add a
 branch to ``_backend()``.
 
 Each cache entry is a JSON object:
     ``fetched_at``  ISO-8601 UTC timestamp
-    ``data``        arbitrary JSON-serialisable payload
+    ``data``        any JSON-serialisable payload
 
 TTL is checked on read; stale entries are treated as misses.
 """

@@ -51,9 +51,7 @@ def _fred_api_key() -> str:
 
 
 async def check_fred_connectivity(api_key: str) -> bool:
-    """
-    Check if FRED API is reachable by fetching a small amount of data.
-    """
+    """Check FRED API is reachable by fetching one observation."""
     loop = asyncio.get_event_loop()
     try:
         response = await loop.run_in_executor(
@@ -107,13 +105,14 @@ def _fetch_fred_series(
     )
     response = requests.get(_FRED_OBSERVATIONS, params=params, timeout=_TIMEOUT_SECONDS)
     response.raise_for_status()
-    return response.json().get("observations", [])
+    observations: list[dict[str, str]] = response.json().get("observations", [])
+    return observations
 
 
 def fetch_tips_yield() -> tuple[float, str]:
     """
     Return the most recent 10-year TIPS real yield as a decimal and the
-    series ID that was actually used.
+    series ID used.
 
     Returns
     -------
@@ -136,7 +135,7 @@ def fetch_tips_yield() -> tuple[float, str]:
             cached["series"],
             cached["yield"] * 100,
         )
-        return cached["yield"], cached["series"]
+        return float(cached["yield"]), str(cached["series"])
 
     api_key = _fred_api_key()
 

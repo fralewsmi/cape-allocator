@@ -3,16 +3,16 @@ Component CAPE fetcher using yfinance.
 
 Methodology
 -----------
-Implements the constituent-level CAPE aggregation described in
-Ma et al. (2026), equations (12)-(16):
+Implements constituent-level CAPE aggregation from Ma et al. (2026),
+equations (12)–(16):
 
     For each S&P 500 constituent i:
         CAPE_i = Price_i / mean_real_EPS_i(t-window, t)
 
     Component CAPE = sum_i( w_i * CAPE_i )
 
-where w_i is each stock's share of total S&P 500 market capitalisation
-(value-weighting, per the paper's primary specification).
+where w_i is each stock's share of total S&P 500 market cap (value-weighted,
+per the paper's primary specification).
 
 Data sources
 ------------
@@ -20,25 +20,24 @@ Constituent list : Wikipedia S&P 500 table (no API key required).
                    https://en.wikipedia.org/wiki/List_of_S%26P_500_companies
 Prices / EPS     : Yahoo Finance via yfinance.
                    Trailing twelve-month EPS (info["trailingEps"]) is used
-                   as the single most recent annual earnings figure.
-                   We fetch up to `window_years` years of annual EPS from
-                   yfinance's financials table where available.
-CPI adjustment   : yfinance does not provide CPI.  We apply a simple
-                   normalisation using the U.S. CPI series from FRED
-                   (CPIAUCSL) to convert historical EPS to real terms,
-                   consistent with Shiller's methodology.
+                   as the most recent annual earnings figure. We fetch up to
+                   `window_years` of annual EPS from yfinance financials
+                   where available.
+CPI adjustment   : yfinance does not provide CPI. We normalise using the
+                   U.S. CPI series from FRED (CPIAUCSL) to convert historical
+                   EPS to real terms, consistent with Shiller's methodology.
 
 Limitations
 -----------
 - yfinance earnings history is patchy for many constituents (typically
-  2-5 years rather than 10).  Short histories increase estimation noise.
-- Coverage below 80% of S&P 500 market cap triggers fallback to the
-  Shiller aggregate CAPE (caller's responsibility — this module returns
-  coverage and raises no exception).
+  2–5 years rather than 10). Short histories increase estimation noise.
+- Coverage below 80% of S&P 500 market cap triggers fallback to Shiller
+  aggregate CAPE (caller's responsibility — this module returns coverage
+  and raises no exception).
 - This is not a reproduction of the Ma et al. dataset (which uses
-  Compustat/Siblis).  Results will differ, particularly the absolute
-  level of the Component CAPE.  The methodology is faithfully applied
-  to the best freely available data.
+  Compustat/Siblis). Results will differ, particularly the absolute level
+  of the Component CAPE. The methodology is faithfully applied to the best
+  freely available data.
 
 Attribution
 -----------
@@ -83,9 +82,7 @@ class ConstituentResult:
     weight: float = 0.0  # Populated after total market cap is known
     years_of_data: int = 0
     used_ttm_only: bool = False  # True if only one year of EPS was available
-    eps_excluded_count: int = (
-        0  # Number of EPS years excluded due to non-positive values
-    )
+    eps_excluded_count: int = 0  # EPS years excluded due to non-positive values
 
 
 @dataclass
@@ -97,9 +94,7 @@ class ComponentCapeResult:
     constituent_results: list[ConstituentResult] = field(default_factory=list)
     tickers_attempted: int = 0
     tickers_succeeded: int = 0
-    eps_exclusion_rate: float = (
-        0.0  # Fraction of EPS years excluded due to non-positive values
-    )
+    eps_exclusion_rate: float = 0.0  # Fraction of EPS years excluded
 
 
 def fetch_sp500_tickers() -> list[str]:
@@ -109,7 +104,7 @@ def fetch_sp500_tickers() -> list[str]:
     Returns
     -------
     list[str]
-        Ticker symbols as they appear on Yahoo Finance (e.g. "BRK.B" → "BRK-B").
+        Ticker symbols formatted for Yahoo Finance (e.g. "BRK.B" → "BRK-B").
     """
     cached = cache_get(_CACHE_KEY_TICKERS)
     if cached is not None:
@@ -149,15 +144,15 @@ def _real_eps_series(
     """
     Build a list of real (CPI-adjusted) annual EPS values for one ticker.
 
-    Attempts to use yfinance annual income statement data for up to
-    `window_years` years, falling back to trailing-twelve-month EPS only.
+    Uses yfinance annual income statement data for up to `window_years`,
+    falling back to trailing-twelve-month EPS if unavailable.
 
     Returns
     -------
     real_eps : list[float]
         Real EPS values, oldest first, length <= window_years.
     years_available : int
-        How many years of data were actually obtained.
+        Years of data obtained.
     used_ttm_only : bool
         True if the income statement was unavailable and TTM EPS was used.
     """
@@ -201,7 +196,7 @@ def _real_eps_series(
     except Exception:  # noqa: BLE001
         pass  # Fall through to TTM-only path
 
-    # Fallback: TTM EPS only (no CPI adjustment needed — it's already current)
+    # Fallback: TTM EPS only (already in current terms, no CPI adjustment needed)
     if ttm_eps is not None and ttm_eps > 0:
         return [float(ttm_eps)], 1, True
 
@@ -231,8 +226,8 @@ def _compute_constituent_cape(
     """
     Compute a single constituent's CAPE ratio.
 
-    Returns None if the ticker cannot be processed (missing price, negative
-    or zero earnings, etc.).
+    Returns None if the ticker cannot be processed (missing price,
+    negative or zero earnings, etc.).
     """
     try:
         with warnings.catch_warnings():
@@ -255,9 +250,9 @@ def _compute_constituent_cape(
         if not real_eps:
             return None
 
-        # Filter out non-positive EPS years before averaging
-        # (Ma et al. winsorise but do not exclude; we exclude to avoid
-        # negative or zero denominators with patchy free data)
+        # Exclude non-positive EPS years before averaging.
+        # Ma et al. winsorise rather than exclude; we exclude to avoid
+        # zero/negative denominators given the patchy yfinance data.
         positive_eps = [e for e in real_eps if e > 0]
         eps_excluded_count = len(real_eps) - len(positive_eps)
         if not positive_eps:
@@ -265,11 +260,10 @@ def _compute_constituent_cape(
 
         mean_real_eps = float(np.mean(positive_eps))
 
-        # Individual CAPE_i = Price_i / mean_real_EPS_i
-        # Ma et al. (2026) eq. (12)
+        # CAPE_i = Price_i / mean_real_EPS_i — Ma et al. (2026) eq. (12)
         raw_cape = price / mean_real_eps
 
-        # Winsorise at upper bound (Ma et al. 2026 apply winsorisation)
+        # Winsorise at upper bound — Ma et al. (2026)
         cape_i = min(raw_cape, _WINSORISE_CAPE_MAX)
 
         return ConstituentResult(
@@ -289,8 +283,8 @@ def fetch_component_cape(window_years: int = 10) -> ComponentCapeResult:
     """
     Compute the Component CAPE for the S&P 500.
 
-    The Component CAPE is the market-cap-weighted average of individual
-    constituent CAPE ratios, as per Ma et al. (2026) equations (12)-(16).
+    Market-cap-weighted average of constituent CAPE ratios, per Ma et al.
+    (2026) equations (12)–(16).
 
     Parameters
     ----------
@@ -300,8 +294,7 @@ def fetch_component_cape(window_years: int = 10) -> ComponentCapeResult:
     Returns
     -------
     ComponentCapeResult
-        Contains the aggregate CAPE, coverage fraction, and per-constituent
-        detail.
+        Aggregate CAPE, coverage fraction, and per-constituent detail.
     """
     cache_key = _CACHE_KEY_COMPONENT_CAPE.format(
         variant="component", window=window_years
@@ -366,8 +359,7 @@ def fetch_component_cape(window_years: int = 10) -> ComponentCapeResult:
     for r in results:
         r.weight = r.market_cap / total_mcap
 
-    # Component CAPE = Σ_i( w_i * CAPE_i )
-    # Ma et al. (2026) eq. (16): value-weighted average of individual CAPEs
+    # Component CAPE = Σ_i( w_i * CAPE_i ) — Ma et al. (2026) eq. (16)
     component_cape = float(sum(r.weight * r.cape for r in results))
     coverage = tickers_succeeded / tickers_attempted
 
@@ -407,15 +399,14 @@ def fetch_component_cape(window_years: int = 10) -> ComponentCapeResult:
 
 def fetch_sp500_monthly_prices() -> pd.Series:
     """
-    Fetch monthly closing prices for S&P 500 (^GSPC) from yfinance.
+    Fetch monthly S&P 500 closing prices (^GSPC) from yfinance.
 
-    Used for computing the 12-month momentum signal.
+    Used to compute the 12-month momentum signal.
 
     Returns
     -------
     pd.Series
-        Monthly closing prices, indexed by date (end of month).
-        Series is sorted with most recent dates first.
+        Monthly closing prices indexed by date, sorted most-recent first.
     """
     cache_key = "sp500_monthly_prices"
     cached = cache_get(cache_key)

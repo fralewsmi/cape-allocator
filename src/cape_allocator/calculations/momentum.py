@@ -4,16 +4,15 @@ Momentum overlay calculations.
 Implements the 12-month momentum signal following Haghani & White (2022)
 and Asness et al. (2013).
 
-The signal: 12-month price return of the S&P 500, excluding the most recent
-month (so months t-12 to t-1). Excluding the last month avoids the well-
-documented short-term reversal effect.
+Signal: 12-month S&P 500 price return from t-12 to t-1 (excluding the most
+recent month to avoid the short-term reversal effect).
 
 References:
     Haghani, V. & White, J. (2022). "Man Doth Not Invest By Earnings Yield Alone."
     Elm Wealth. https://elmwealth.com/earnings-yield-dynamic-allocation/
 
     Asness, C. S., Moskowitz, T. J., & Pedersen, L. H. (2013).
-    "Value and Momentum Everywhere." The Journal of Finance, 68(3), 929-985.
+    "Value and Momentum Everywhere." The Journal of Finance, 68(3), 929–985.
 """
 
 from __future__ import annotations
@@ -25,8 +24,8 @@ def compute_momentum_signal(sp500_prices: pd.Series) -> float:
     """
     Compute the 12-month momentum signal for S&P 500.
 
-    The signal is the price return from month t-12 to t-1 (excluding the
-    most recent month to avoid short-term reversal effects).
+    Returns the price return from t-12 to t-1, excluding the most recent
+    month to avoid the short-term reversal effect.
 
     Parameters
     ----------
@@ -37,25 +36,23 @@ def compute_momentum_signal(sp500_prices: pd.Series) -> float:
     Returns
     -------
     float
-        12-month momentum return (decimal). Positive values indicate
-        momentum favors equities.
+        12-month momentum return (decimal). Positive = momentum favors equities.
 
     Raises
     ------
     ValueError
-        If insufficient price history (< 13 months).
+        If fewer than 13 months of price history are provided.
     """
     if len(sp500_prices) < 13:
         raise ValueError(
             f"Need at least 13 months of S&P 500 prices; got {len(sp500_prices)}"
         )
 
-    # Sort by date (most recent first) and get the last 13 prices
+    # Sort descending and take the 13 most recent prices
     prices = sp500_prices.sort_index(ascending=False).iloc[:13]
 
-    # Price 12 months ago (t-12)
+    # t-12 and t-1 prices
     price_t12 = prices.iloc[12]
-    # Price 1 month ago (t-1)
     price_t1 = prices.iloc[1]
 
     # Return from t-12 to t-1
@@ -70,11 +67,11 @@ def blend_signals(
     momentum_weight: float,
 ) -> float:
     """
-    Blend Merton and momentum allocations using equal weights.
+    Blend Merton and momentum allocations.
 
     f_blended = (1 - w) * f_merton + w * f_momentum
 
-    where f_momentum = 1.0 if momentum_signal > 0, else 0.0
+    where f_momentum = 1.0 if momentum_signal > 0, else 0.0.
 
     Parameters
     ----------
@@ -83,7 +80,7 @@ def blend_signals(
     momentum_signal : float
         12-month momentum return (decimal).
     momentum_weight : float
-        Weight given to momentum signal (0.0 = pure Merton, 1.0 = pure momentum).
+        Weight on momentum (0.0 = pure Merton, 1.0 = pure momentum).
 
     Returns
     -------

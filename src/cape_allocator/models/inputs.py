@@ -17,11 +17,11 @@ class CapeVariant(StrEnum):
     """
     CAPE earnings-averaging methodologies evaluated in Ma et al. (2026).
 
-    Out-of-sample R² figures are from Table 3, constant-slope approach,
+    Out-of-sample R² figures from Table 3, constant-slope approach,
     OOS period 1974–2015.
 
-    COMPONENT_10Y is the recommended default: it achieves the highest
-    predictive accuracy and is the paper's primary result.
+    COMPONENT_10Y is the recommended default: highest predictive accuracy
+    and the paper's primary result.
     """
 
     COMPONENT_10Y = "component_10y"  # Ma et al. baseline — OOS R² = 57.52%
@@ -59,10 +59,10 @@ class InvestorParams(BaseModel):
     """
     Investor-supplied parameters governing the Merton Rule calculation.
 
-    Defaults follow Haghani & White (2022), who set γ = 2 as representative
-    of a slightly risk-tolerant investor, and σ = 18% as the long-run
-    equity volatility constant used throughout their historical simulation
-    (and adopted by the AllocateSmartly implementation of the strategy).
+    Defaults follow Haghani & White (2022): γ = 2 for a moderately
+    risk-tolerant investor, σ = 18% as the long-run equity volatility
+    constant used in their historical simulation and the AllocateSmartly
+    implementation.
 
     Reference:
         Haghani, V. & White, J. (2022). "Man Doth Not Invest By Earnings
@@ -114,18 +114,17 @@ class MarketInputs(BaseModel):
     manually for testing or scripted use.
 
     cape_value:
-        The CAPE ratio for the chosen variant.  Must be positive.
-        As of end-2024, the Component 10Y CAPE stood at approximately
-        56× (Ma et al., 2026, communicated to Globe and Mail, March 2026),
-        versus the historical mean of 29.74×.
+        CAPE ratio for the chosen variant. Must be positive.
+        At end-2024, the Component 10Y CAPE stood at approximately 56×
+        (Ma et al., 2026; Globe and Mail, March 2026), versus the
+        historical mean of 29.74×.
 
     tips_yield:
-        The 10-year TIPS real yield as a decimal (e.g. 0.022 for 2.2%).
+        10-year TIPS real yield as a decimal (e.g. 0.022 for 2.2%).
         Sourced from FRED series DFII10.
-        As of early 2026, approximately 2.0–2.2%.
 
     as_of_date:
-        The date for which these market inputs apply.
+        The date these market inputs apply to.
     """
 
     cape_value: float = Field(

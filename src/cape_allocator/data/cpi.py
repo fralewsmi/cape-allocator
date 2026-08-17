@@ -4,11 +4,10 @@ U.S. CPI fetcher used to convert nominal EPS to real terms.
 Series: CPIAUCSL — Consumer Price Index for All Urban Consumers: All Items
         https://fred.stlouisfed.org/series/CPIAUCSL
 
-This is the same CPI series used by Robert Shiller in his online dataset
-to adjust earnings and prices to a common price level.
+Same series Shiller uses in his online dataset to adjust earnings and
+prices to a common price level.
 
-Uses the FRED REST API via ``fred._fetch_fred_series`` (same as TIPS data).
-Requires FRED_API_KEY in .env.
+Uses the FRED REST API via ``fred._fetch_fred_series``. Requires FRED_API_KEY in .env.
 """
 
 from __future__ import annotations
@@ -33,10 +32,9 @@ def fetch_cpi_index() -> pd.Series:
     """
     Return monthly U.S. CPI (CPIAUCSL) as a pandas Series indexed by date.
 
-    Values are the raw index level (not percent change).  The caller
-    divides historical earnings by the historical CPI and multiplies by
-    the current CPI to obtain real values at today's price level —
-    the same approach used in Shiller's dataset.
+    Values are raw index levels (not percent change). Divide historical
+    earnings by the historical CPI and multiply by the current CPI to get
+    real values at today's price level — the same approach Shiller uses.
 
     Returns
     -------

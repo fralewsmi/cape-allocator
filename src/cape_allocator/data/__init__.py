@@ -34,17 +34,16 @@ def fetch_market_inputs(
     """
     Fetch current market inputs: CAPE value and TIPS yield.
 
-    Falls back to Shiller aggregate CAPE if:
-    - constituent coverage < 80%, or
-    - the component CAPE fetch exceeds _COMPONENT_CAPE_TIMEOUT_SECONDS
-      (guards against stale-cache cold fetches timing out the Lambda).
+    Falls back to Shiller aggregate CAPE if constituent coverage < 80%,
+    or if the component CAPE fetch exceeds _COMPONENT_CAPE_TIMEOUT_SECONDS
+    (guards against cold-start timeouts in Lambda).
 
     Returns
     -------
     MarketInputs
         Fetched market data.
     list[DataWarning]
-        Any warnings from the fetch process.
+        Any warnings from the fetch.
     """
     warnings: list[DataWarning] = []
     eps_exclusion_rate: float | None = None
@@ -65,9 +64,9 @@ def fetch_market_inputs(
                     timeout=_COMPONENT_CAPE_TIMEOUT_SECONDS
                 )
             except FuturesTimeoutError:
-                # The live fetch is too slow (cache miss on a cold Lambda).
-                # Cancel the in-flight work and fall back immediately so we
-                # can still return a useful response within the Lambda timeout.
+                # Live fetch is too slow (cache miss on a cold Lambda).
+                # Cancel the in-flight work and fall back so we return
+                # a useful response within the Lambda timeout.
                 component_future.cancel()
                 logger.warning(
                     "Component CAPE fetch exceeded %ss timeout — falling back to "
@@ -103,7 +102,7 @@ def fetch_market_inputs(
             constituent_coverage = component_result.coverage
             eps_exclusion_rate = component_result.eps_exclusion_rate
 
-            # Check for EPS data quality issues
+            # Check EPS data quality
             if component_result.eps_exclusion_rate > _EPS_EXCLUSION_WARN_THRESHOLD:
                 warnings.append(
                     DataWarning(

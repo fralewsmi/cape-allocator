@@ -1,8 +1,8 @@
 """
 Output models — allocation result and warning system.
 
-The warnings list allows the library to surface data quality issues
-without raising exceptions, so callers can inspect and decide.
+The warnings list lets the library surface data quality issues without
+raising exceptions, so callers can inspect and decide what to do.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from cape_allocator.models.inputs import HISTORICAL_MEAN_CAPE, CapeVariant
 
 
 class WarningSeverity(StrEnum):
-    INFO = "INFO"  # Contextual note, no action required
+    INFO = "INFO"  # Contextual note, no action needed
     WARN = "WARN"  # Data quality issue; result still produced
     ERROR = "ERROR"  # Significant data problem; result may be unreliable
 
@@ -33,18 +33,14 @@ class AllocationResult(BaseModel):
     """
     Full output of a single allocation computation.
 
-    All intermediate signals are preserved so callers can inspect,
-    log, or display the full reasoning chain — not just the final number.
+    All intermediate signals are preserved so callers can inspect or display
+    the full reasoning chain, not just the final number.
 
     Formula references:
-        Earnings yield:         EY = 1 / CAPE
-            (Campbell & Shiller, 1988)
-        Excess earnings yield:  μ = EY − TIPS_yield
-            (Haghani & White, 2022)
-        Merton share (raw):     f* = μ / (γ · σ²)
-            (Merton, 1971, eq. for optimal risky asset weight)
-        Certainty equiv. return: CER = f·μ − (γ/2)·(f·σ)²
-            (Ma et al., 2026, eq. 17; Campbell & Thompson, 2008)
+        Earnings yield:          EY = 1 / CAPE  (Campbell & Shiller, 1988)
+        Excess earnings yield:   μ = EY − TIPS_yield  (Haghani & White, 2022)
+        Merton share (raw):      f* = μ / (γ · σ²)  (Merton, 1971)
+        Certainty equiv. return: CER = f·μ − (γ/2)·(f·σ)²  (Ma et al., 2026, eq. 17)
     """
 
     # ── Inputs (echoed for traceability) ─────────────────────────────────────
@@ -85,8 +81,8 @@ class AllocationResult(BaseModel):
     equity_allocation: float = Field(
         description=(
             "Blended optimal equity allocation: "
-            "momentum_weight * f_momentum"
-            "+ (1-momentum_weight) * merton_share_unconstrained."
+            "(1 - momentum_weight) * merton_share_unconstrained "
+            "+ momentum_weight * f_momentum."
         )
     )
     tips_allocation: float = Field(
@@ -106,13 +102,13 @@ class AllocationResult(BaseModel):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def historical_mean_cape(self) -> float:
-        """Historical mean CAPE for this variant from Ma et al. (2026) Table 1."""
+        """Historical mean CAPE for this variant (Ma et al., 2026, Table 1)."""
         return HISTORICAL_MEAN_CAPE[self.cape_variant]
 
     @computed_field  # type: ignore[prop-decorator]
     @property
     def cape_vs_mean_pct(self) -> float:
-        """How far current CAPE deviates from its historical mean, as a percentage."""
+        """Percentage deviation of current CAPE from its historical mean."""
         mean = self.historical_mean_cape
         return (self.cape_value - mean) / mean * 100.0
 

@@ -6,13 +6,13 @@ Usage examples
     # Fully interactive (prompts for all parameters):
     cape-allocator
 
-    # Fully specified via flags:
+    # All flags supplied:
     cape-allocator --gamma 2.0 --sigma 0.18 --momentum-weight 0.5
 
-    # Mixed: flags provided for some, prompts for the rest:
+    # Some flags, rest prompted:
     cape-allocator --gamma 3.0 --cape-variant component_10y
 
-    # Override CAPE/TIPS manually (skip live data fetch):
+    # Manual CAPE/TIPS override (skips live data fetch):
     cape-allocator --cape 56.0 --tips 0.022
 
     # Clear the local cache then run:
@@ -47,7 +47,7 @@ console = Console()
 
 _VARIANT_CHOICES = [v.value for v in CapeVariant]
 
-# ── Annotation strings ────────────────────────────────────────────────────────
+# ── Help strings ─────────────────────────────────────────────────────────────
 _GAMMA_HELP = (
     "Risk aversion γ (CRRA).  Default 2.0 per Haghani & White (2022). "
     "Ma et al. (2026) Table 8 uses γ=5."
@@ -74,8 +74,8 @@ def _build_parser() -> argparse.ArgumentParser:
         description=(
             "Component CAPE + Merton Rule portfolio allocator.\n\n"
             "Computes the optimal equity/TIPS split for a CRRA investor "
-            "using the Component CAPE methodology of Ma et al. (2026) and "
-            "the Excess Earnings Yield framework of Haghani & White (2022)."
+            "using Component CAPE (Ma et al. 2026) and the Excess Earnings "
+            "Yield framework (Haghani & White 2022)."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -191,7 +191,6 @@ def _prompt_variant_if_none(variant_str: str | None) -> CapeVariant:
 
 def _render_result(result: AllocationResult) -> None:
     """Render the allocation result as a Rich table."""
-
     # ── Warnings panel ────────────────────────────────────────────────────
     if result.warnings:
         for w in result.warnings:

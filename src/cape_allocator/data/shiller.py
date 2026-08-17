@@ -1,16 +1,16 @@
 """
 Shiller aggregate CAPE fallback.
 
-Fetches Robert Shiller's publicly available S&P 500 data from Yale:
+Fetches Robert Shiller's S&P 500 data from Yale:
     http://www.econ.yale.edu/~shiller/data/ie_data.xls
 
-The spreadsheet's "Data" sheet contains monthly observations of the
-Shiller CAPE (column "CAPE") alongside price, earnings, dividends, and CPI.
+The "Data" sheet contains monthly observations of the Shiller CAPE
+alongside price, earnings, dividends, and CPI.
 
 No API key required.
 
-This is used as the AGGREGATE_10Y variant and as a fallback when
-yfinance constituent coverage drops below the 80% threshold.
+Used as the AGGREGATE_10Y variant and as a fallback when yfinance
+constituent coverage drops below 80%.
 """
 
 from __future__ import annotations
@@ -67,7 +67,6 @@ def fetch_aggregate_cape() -> tuple[float, str]:
             sheet_name=_SHEET_NAME,
             header=_HEADER_ROW,
         )
-        # The CAPE column is labelled "CAPE" in recent versions of the file.
         # Drop rows where CAPE is NaN (trailing empty rows in the spreadsheet).
         cape_col = df["CAPE"].dropna()
         cape = float(cape_col.iloc[-1])

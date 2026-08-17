@@ -2,8 +2,7 @@
 Top-level allocation orchestrator.
 
 Chains data fetching → CAPE calculation → Merton Rule → AllocationResult.
-Collects all warnings along the way rather than raising exceptions on
-data quality issues.
+Collects warnings throughout rather than raising on data quality issues.
 """
 
 from __future__ import annotations
@@ -52,8 +51,7 @@ def compute_allocation(
     """
     Compute the optimal equity/TIPS allocation from investor and market inputs.
 
-    This is the library's primary entry point.  It is a pure orchestration
-    function — all I/O has already occurred by the time this is called.
+    The library's main entry point. Pure: all I/O happens before this is called.
 
     Parameters
     ----------
@@ -190,11 +188,11 @@ def compute_allocation(
 
 def fetch_market_inputs_and_allocate(investor: InvestorParams) -> AllocationResult:
     """
-    Convenience function that fetches live market data then computes allocation.
+    Fetch live market data then compute the allocation.
 
-    Applies the coverage-based fallback logic:
+    Coverage-based fallback logic:
     1. Attempt to fetch Component CAPE from yfinance constituents.
-    2. If coverage < 80%, fall back to Shiller aggregate CAPE and attach warning.
+    2. If coverage < 80%, fall back to Shiller aggregate CAPE and attach a warning.
     3. Fetch TIPS yield from FRED (DFII10).
 
     Parameters
@@ -207,7 +205,7 @@ def fetch_market_inputs_and_allocate(investor: InvestorParams) -> AllocationResu
     AllocationResult
         Full result with live market data.
     """
-    # Import here to keep calculations/ free of I/O at module level
+    # Import here to keep calculations/ free of I/O at module load
     from cape_allocator.data.fred import fetch_tips_yield
     from cape_allocator.data.shiller import fetch_aggregate_cape
     from cape_allocator.data.yfinance import (
