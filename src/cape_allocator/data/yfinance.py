@@ -109,7 +109,7 @@ def fetch_sp500_tickers() -> list[str]:
     cached = cache_get(_CACHE_KEY_TICKERS)
     if cached is not None:
         logger.info("Wikipedia: using cached S&P 500 list (%s tickers)", len(cached))
-        return cached
+        return [str(t) for t in cached]
 
     logger.info("Wikipedia: downloading S&P 500 constituent table…")
     try:
@@ -424,7 +424,7 @@ def fetch_sp500_monthly_prices() -> pd.Series:
         raise RuntimeError("Could not fetch S&P 500 price data from Yahoo Finance")
 
     # Use the 'Close' column and sort with most recent first
-    prices = hist["Close"].sort_index(ascending=False)
+    prices: pd.Series = pd.Series(hist["Close"]).sort_index(ascending=False)
 
     # Cache the data
     cache_set(

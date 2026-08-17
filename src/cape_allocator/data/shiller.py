@@ -50,7 +50,7 @@ def fetch_aggregate_cape() -> tuple[float, str]:
     cached = cache_get(_CACHE_KEY)
     if cached is not None:
         logger.info("Shiller: cache hit (aggregate CAPE %.2f×)", cached["cape"])
-        return cached["cape"], cached["source"]
+        return float(cached["cape"]), str(cached["source"])
 
     logger.info("Shiller: downloading ie_data.xls from Yale…")
     try:
