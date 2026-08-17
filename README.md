@@ -1,14 +1,10 @@
-# Component CAPE + Merton Rule Portfolio Allocator
+# CAPE Allocator
 
 [![CI](https://github.com/fralewsmi/cape-allocator/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/fralewsmi/cape-allocator/actions/workflows/ci.yml?query=branch%3Amain)
 
-Backend for the Component CAPE + Merton Rule Portfolio Allocator [fralewsmi/cape-allocator-ui](https://github.com/fralewsmi/cape-allocator-ui)
+API backend for [fralewsmi/cape-allocator-ui](https://github.com/fralewsmi/cape-allocator-ui).
 
-I became interested in optimal equity allocation after reading Shiller's Irrational Exuberance and tracking his CAPE ratio during the high equity valuations in 2025 with the AI bubble and global tariffs.
-
-[This FTAV article](https://www.ft.com/content/84b8a579-8634-47de-a421-a1eb39c8577d) by Toby Nangle pointed me to Ma, Marshall, Nguyen & Visaltanachoti (2026), who proposed the component CAPE as a new model that provides higher accuracy for returns prediction.
-
-I thought it would be fun to test this out using the Merton Rule framework proposed by [Haghani & White (2022)](https://elmwealth.com/earnings-yield-dynamic-allocation/), using the excess yield over the TIPS rate to establish the equity risk premium.
+I became interested in optimal equity allocation after reading Shiller's Irrational Exuberance and tracking his CAPE ratio during the high valuations of 2025. [This FTAV article](https://www.ft.com/content/84b8a579-8634-47de-a421-a1eb39c8577d) by Toby Nangle pointed me to Ma, Marshall, Nguyen & Visaltanachoti (2026), who proposed the component CAPE as a better predictor of long-run returns. I wanted to test it inside the Merton Rule framework from [Haghani & White (2022)](https://elmwealth.com/earnings-yield-dynamic-allocation/), using the excess earnings yield over TIPS as the equity risk premium.
 
 **Merton Rule:**
 
@@ -22,34 +18,28 @@ where:
 
 ## Installation
 
-### Core Library
+### Core library
 
 ```bash
-# Create and activate virtual environment (or use venv, conda, etc.)
+# Create and activate a virtual environment
 uv venv && source .venv/bin/activate
 
-# Install all development and API tools (recommended for development)
+# Install everything (recommended for development)
 uv sync --extra dev
 
-# Install dependencies (core only for basic usage)
-uv sync
+# Or install only what you need
+uv sync --extra test      # pytest, pytest-cov, hypothesis
+uv sync --extra lint      # ruff
+uv sync --extra type      # ty
+uv sync --extra api       # fastapi, mangum, uvicorn, httpx
 
-# Install with specific optional groups
-uv sync --extra test      # testing tools (pytest, pytest-cov, hypothesis)
-uv sync --extra lint      # linting tools (ruff)
-uv sync --extra type      # type checking (ty)
-uv sync --extra api       # API server (fastapi, mangum, uvicorn, httpx)
-
-# Copy environment file
-cp .env.example .env   # add your FRED API key
+# Copy the environment file and add your FRED API key
+cp .env.example .env
 ```
 
-### API Server
-
-For the FastAPI web service:
+### API server
 
 ```bash
-# Set environment variables
 export FRED_API_KEY="your_fred_api_key"
 export CORS_ORIGINS="https://your-frontend.com"  # optional, defaults to *
 
@@ -61,26 +51,18 @@ docker build -t cape-allocator .
 docker run -p 8000:8000 -e FRED_API_KEY=... cape-allocator
 ```
 
-### AWS Lambda Deployment
+### AWS Lambda deployment
 
-This API is Lambda-ready via the `Mangum` handler in `api/main.py` and the
-Serverless Framework config in `serverless.yml`. Deployment is handled by
-GitHub Actions.
+The API deploys to Lambda via the `Mangum` handler in `api/main.py` and the Serverless Framework config in `serverless.yml`. GitHub Actions handles deployment automatically.
 
-Pushes to `main` deploy the Lambda after linting, type checking, and tests pass.
-You can also trigger a manual deploy from the GitHub Actions UI with a custom
-stage or region.
+Pushes to `main` deploy the Lambda after lint, type check, and tests pass. You can also trigger a manual deploy from the GitHub Actions UI with a custom stage or region.
 
 The stack provisions two Lambda functions:
 
 - **`api`** — the FastAPI handler, invoked by API Gateway on every request
-- **`warmer`** — a scheduled function (4am and 4pm UTC) that pre-populates the S3
-  cache so the `api` function never has to do a cold data fetch during a user request
+- **`warmer`** — runs at 4am and 4pm UTC to pre-populate the S3 cache, so the `api` function never does a cold data fetch during a user request
 
-An S3 bucket for the shared cache is created automatically by the stack
-(`cape-allocator-cache-<stage>-<account-id>`). Both functions share it via the
-`CAPE_CACHE_URL` environment variable (`s3://bucket-name`), which is wired up
-by the Serverless Framework.
+An S3 bucket for the shared cache is created automatically (`cape-allocator-cache-<stage>-<account-id>`). Both functions share it via the `CAPE_CACHE_URL` environment variable (`s3://bucket-name`), wired up by the Serverless Framework.
 
 Required GitHub repository secrets:
 
@@ -93,9 +75,7 @@ Optional GitHub repository variables:
 - `SERVERLESS_STAGE`: defaults to `dev`
 - `CORS_ORIGINS`: defaults to `https://cape-allocator-ui.lewissmith-fraser.workers.dev`
 
-The AWS role needs permission to deploy the Serverless stack and its Lambda/API
-Gateway resources. Prefer GitHub OIDC over static AWS access keys so CI does not
-store long-lived credentials.
+Use GitHub OIDC rather than static AWS access keys so CI does not store long-lived credentials.
 
 ## Usage
 
@@ -107,27 +87,25 @@ cape-allocator --gamma 2.0 --sigma 0.18 --momentum-weight 0.5 --cape-variant com
 cape-allocator --cape 56.0 --tips 0.022  # manual override, no API needed
 ```
 
-- `--gamma` is the most consequential choice. `γ = 2` (Haghani & White default) is aggressive; `γ = 5` (Ma et al. calibration) allocates ~30% at the historical mean CAPE.
-- `--momentum-weight` controls blending with 12-month S&P 500 momentum (0.0 = pure Merton, 0.5 = equal blend)
-- `--cape` and `--tips` together set where on the x-axis the program is operating
-- `--sigma` can generally be left at the default 18%, which is the long-run historical average
+- `--gamma` has the most impact. `γ = 2` (Haghani & White default) is aggressive; `γ = 5` (Ma et al. calibration) allocates ~30% at the historical mean CAPE.
+- `--momentum-weight` controls blending with 12-month S&P 500 momentum (0.0 = pure Merton, 0.5 = equal blend).
+- `--cape` and `--tips` together skip live data fetches.
+- `--sigma` can usually stay at the default 18%, the long-run historical average.
 
-`cape-allocator --help` For more options
+Run `cape-allocator --help` for all options.
 
 ### API
 
-The FastAPI server provides REST endpoints for integration with web frontends.
-
 #### Endpoints
 
-- `GET /health` - Health check with cache and FRED status
-- `GET /api/market-inputs` - Fetch current CAPE and TIPS data
-- `GET /api/cape-variants` - List available CAPE variants
-- `POST /api/allocation` - Compute allocation with live data
-- `POST /api/allocation/manual` - Compute allocation with manual inputs
-- `GET /api/sensitivity` - Stream sensitivity analysis (NDJSON)
+- `GET /health` — health check with cache and FRED status
+- `GET /api/market-inputs` — current CAPE and TIPS data
+- `GET /api/cape-variants` — available CAPE variants
+- `POST /api/allocation` — compute allocation with live data
+- `POST /api/allocation/manual` — compute allocation with manual inputs
+- `GET /api/sensitivity` — stream sensitivity analysis (NDJSON)
 
-#### Example Requests
+#### Example requests
 
 ```bash
 # Health check
@@ -149,7 +127,7 @@ curl -X POST http://localhost:8000/api/allocation/manual \
 
 ### Choosing γ (risk aversion)
 
-A standard heuristic is to ask: _how would a permanent 50% loss of wealth affect my life?_
+A useful heuristic: how would a permanent 50% loss of wealth affect your life?
 
 | γ   | Profile                                                                   |
 | --- | ------------------------------------------------------------------------- |
@@ -158,146 +136,111 @@ A standard heuristic is to ask: _how would a permanent 50% loss of wealth affect
 | 5   | Ma et al. (2026) calibration; pre-retiree or institutionally conservative |
 | 10  | Retiree; portfolio is primary income source                               |
 
-Note that `γ` should reflect _financial_ risk aversion rather than emotional comfort. A large pension or guaranteed income effectively lowers your financial `γ` even if markets make you nervous. See [Haghani & White (2018)](https://elmwealth.com/measuring-the-fabric-of-felicity/)
+`γ` should reflect financial risk aversion, not emotional comfort. A large pension or guaranteed income effectively lowers your financial `γ` even if markets make you nervous. See [Haghani & White (2018)](https://elmwealth.com/measuring-the-fabric-of-felicity/).
 
 ### Momentum overlay
 
-The model includes a 12-month momentum overlay following Haghani & White (2022) and Asness et al. (2013). The momentum signal is blended with the Merton allocation:
+The model includes a 12-month momentum overlay following Haghani & White (2022) and Asness et al. (2013):
 
 $$f_\text{blended} = (1 - w) \cdot f_\text{merton} + w \cdot f_\text{momentum}$$
 
-Where:
+where:
 
 - $f_\text{momentum} = 1.0$ if 12-month S&P 500 momentum is positive, $0.0$ otherwise
 - $w$ is the momentum weight (0.0 = pure Merton, 1.0 = pure momentum)
 
-The momentum signal uses the price return from 12 months ago to 1 month ago (excluding the most recent month to avoid short-term reversal effects).
+The signal uses the price return from 12 months ago to 1 month ago, excluding the most recent month to avoid short-term reversal.
 
-Use `--momentum-weight 0.5` for equal blending (Asness et al. recommendation). When Merton suggests 0% but momentum is positive, this naturally allocates 50% to equities without arbitrary clamps.
+Use `--momentum-weight 0.5` for equal blending (Asness et al. recommendation). When Merton suggests 0% but momentum is positive, this allocates 50% to equities without arbitrary clamps.
 
 ## Data sources
 
-Responses are cached to avoid redundant upstream fetches. The cache backend is
-selected automatically:
+Responses are cached to avoid redundant upstream fetches. The cache backend is selected automatically:
 
 - **Local / Docker**: JSON files under `CAPE_CACHE_URL` (default `~/.cache/cape_allocator`)
 - **Lambda**: S3 bucket provisioned by the stack, shared across all function instances (`CAPE_CACHE_URL=s3://bucket-name`)
 
-- **FRED** ([API key](https://fred.stlouisfed.org/docs/api/api_key.html) in `.env`): TIPS `DFII10` / `WFII10`, CPI `CPIAUCSL`.
-- **[Wikipedia](https://en.wikipedia.org/wiki/List_of_S%26P_500_companies)**: S&P 500 tickers.
-- **[Yahoo Finance](https://finance.yahoo.com/)** via [yfinance](https://github.com/ranaroussi/yfinance): prices, market cap, EPS, and S&P 500 monthly prices for momentum (unofficial).
-- **[Shiller CAPE spreadsheet](http://www.econ.yale.edu/~shiller/data/ie_data.xls)** (Yale): aggregate CAPE and low-coverage fallback.
+Sources:
 
-`--cape` and `--tips` together skip live CAPE/TIPS fetches.
-Adjust CLI fetch logs: `-v` (verbose) / `-q` (quiet).
+- **FRED** ([API key](https://fred.stlouisfed.org/docs/api/api_key.html) in `.env`): TIPS `DFII10` / `WFII10`, CPI `CPIAUCSL`
+- **[Wikipedia](https://en.wikipedia.org/wiki/List_of_S%26P_500_companies)**: S&P 500 tickers
+- **[Yahoo Finance](https://finance.yahoo.com/)** via [yfinance](https://github.com/ranaroussi/yfinance): prices, market cap, EPS, and monthly S&P 500 prices for momentum (unofficial)
+- **[Shiller CAPE spreadsheet](http://www.econ.yale.edu/~shiller/data/ie_data.xls)** (Yale): aggregate CAPE and low-coverage fallback
+
+`--cape` and `--tips` together skip live CAPE/TIPS fetches. Adjust fetch log verbosity with `-v` (verbose) or `-q` (quiet).
 
 ## Development
 
-### Optional Dependencies
+### Optional dependencies
 
-This project uses modular optional dependencies for different development tasks:
+| Group   | Contents |
+| ------- | -------- |
+| `test`  | pytest, pytest-cov, hypothesis |
+| `lint`  | ruff |
+| `type`  | ty |
+| `api`   | fastapi, mangum, uvicorn, httpx |
+| `dev`   | all of the above |
 
-- **`[test]`**: Testing with pytest, pytest-cov, and hypothesis
-- **`[lint]`**: Code linting and formatting with Ruff
-- **`[type]`**: Type checking with ty
-- **`[api]`**: FastAPI server stack (fastapi, mangum, uvicorn, httpx)
-- **`[dev]`**: All of the above (meta-group for complete development environment)
+Install any combination: `uv sync --extra test --extra lint`, or `uv sync --extra dev` for everything.
 
-Install any combination: `pip install -e ".[test,lint,type]"` or just `pip install -e ".[dev]"` for everything.
-
-### Type Checking
-
-This project uses [ty](https://docs.astral.sh/ty/) for type checking.
+### Type checking
 
 ```bash
-# Install type checking dependencies
 uv sync --extra type
-
-# Run type checks
 ty check
-
-# Run with specific configuration
-ty check --config pyproject.toml
 ```
 
 ### Pre-commit hooks
 
-The project uses [pre-commit](https://pre-commit.com/) to run ruff, ruff-format, and pytest before each commit.
+[pre-commit](https://pre-commit.com/) runs ruff, ruff-format, and pytest before each commit.
 
 ```bash
-# Install hooks (first time only, pre-commit is included in dev deps)
-pre-commit install
-
-# Run hooks manually against all files
+pre-commit install        # first time only
 pre-commit run --all-files
 ```
 
 ### Linting
 
-This project uses [Ruff](https://docs.astral.sh/ruff/) for code linting and formatting.
-
 ```bash
-# Install linting dependencies
 uv sync --extra lint
-
-# Check for linting issues
-ruff check .
-
-# Fix auto-fixable issues
-ruff check . --fix
-
-# Format code
-ruff format .
+ruff check .          # check
+ruff check . --fix    # auto-fix
+ruff format .         # format
 ```
 
 ### Testing
 
-Run the test suite using pytest:
-
 ```bash
-# Install test dependencies
 uv sync --extra test
-
-# Run all tests
 pytest
-
-# Run with coverage report
 pytest --cov=cape_allocator --cov-report=html
 ```
 
-### Continuous Integration
+### Continuous integration
 
-This project uses GitHub Actions for automated testing, linting, type checking,
-and deployment. Workflows are defined in `.github/workflows/ci.yml` and run on:
+GitHub Actions runs on push to `main`, pull requests to `main`, and manual dispatch. The pipeline runs:
 
-- Push to `main` branch
-- Pull requests to `main` branch
-- Manual workflow dispatch
-
-The CI pipeline checks:
-
-- **Lint**: Code style and quality with Ruff
-- **Type Check**: Type safety with ty
-- **Test**: Unit tests with pytest and coverage reporting
-- **Deploy**: AWS Lambda deployment with Serverless Framework after checks pass
-  on `main` or manual dispatch
+1. Lint (ruff)
+2. Type check (ty)
+3. Tests (pytest with coverage)
+4. Deploy to AWS Lambda (on `main` or manual dispatch)
 
 ## References
 
-- Asness, C. S., Moskowitz, T. J., & Pedersen, L. H. (2013). "Value and Momentum Everywhere." _The Journal of Finance_, 68(3), 929-985.
-  - <https://doi.org/10.1111/jofi.12021>
+- Asness, C. S., Moskowitz, T. J., & Pedersen, L. H. (2013). "Value and Momentum Everywhere." _The Journal of Finance_, 68(3), 929–985.
+  <https://doi.org/10.1111/jofi.12021>
 
-- Asness, C.S., Ilmanen, A., & Maloney, T. (2017). "MARKET TIMING : SIN A LITTLE RESOLVING THE VALUATION TIMING PUZZLE.". AQR
-  - <https://www.aqr.com/-/media/AQR/Documents/Insights/White-Papers/Market-Timing-Sin-a-Little.pdf>
+- Asness, C. S., Ilmanen, A., & Maloney, T. (2017). "Market Timing: Sin a Little — Resolving the Valuation Timing Puzzle." AQR.
+  <https://www.aqr.com/-/media/AQR/Documents/Insights/White-Papers/Market-Timing-Sin-a-Little.pdf>
 
-- Haghani, V., & White, J. (2018) "Measuring the Fabric of Felicity." Elm Wealth.
-  - <https://elmwealth.com/measuring-the-fabric-of-felicity/>
+- Haghani, V., & White, J. (2018). "Measuring the Fabric of Felicity." Elm Wealth.
+  <https://elmwealth.com/measuring-the-fabric-of-felicity/>
 
 - Haghani, V., & White, J. (2022). "Man Doth Not Invest by Earnings Yield Alone: A Fresh Look at Earnings Yield and Dynamic Asset Allocation." Elm Wealth.
-  - <https://elmwealth.com/earnings-yield-dynamic-allocation/>
+  <https://elmwealth.com/earnings-yield-dynamic-allocation/>
 
 - Li, K., Li, Y., Lyu, C., & Yu, J. (2025). "How to Dominate the Historical Average." _Review of Financial Studies_.
-  - <https://academic.oup.com/rfs/article/38/10/3086/8010588>
+  <https://academic.oup.com/rfs/article/38/10/3086/8010588>
 
 - Ma, Q., Marshall, A., Nguyen, T. H., & Visaltanachoti, N. (2026). "CAPE Ratios and Long-Term Returns."
-  - <https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6060895>
+  <https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6060895>
